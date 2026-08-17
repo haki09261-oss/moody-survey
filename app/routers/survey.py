@@ -79,6 +79,7 @@ def get_survey(
         "token": None,
         "user_code": None,
         "display_code": None,
+        "submission_status": None,
     }
 
     ended = bool(survey.ends_at and now >= survey.ends_at)
@@ -120,6 +121,7 @@ def get_survey(
                 )
             )
             base["display_code"] = build_display_code(sub.redeem_code, sub.tier_reached, sub.degree)
+            base["submission_status"] = sub.status
             return base
         if ended:
             base["token_status"] = "ended"
@@ -418,12 +420,23 @@ def track(
 
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "web")
+PROJECT_DIR = os.path.dirname(WEB_DIR)
+
+
+@router.get("/s/survey-submit.js")
+def current_survey_submit_script():
+    return FileResponse(
+        os.path.join(WEB_DIR, "survey-submit-fastapi.js"),
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @router.get("/s/{slug}")
 def survey_page(slug: str):
     # no-cache：强制 WebView 每次回源校验，避免手机端拿到引用旧 v= 脚本的缓存 HTML
+    page = os.path.join(PROJECT_DIR, "index.html") if slug == "moody" else os.path.join(WEB_DIR, "survey.html")
     return FileResponse(
-        os.path.join(WEB_DIR, "survey.html"),
+        page,
         headers={"Cache-Control": "no-cache"},
     )

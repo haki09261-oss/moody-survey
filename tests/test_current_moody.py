@@ -72,6 +72,27 @@ def test_current_schema_contains_latest_requested_content():
     assert "被“高透氧”“泪循环”等产品参数/功能打动" in by_id["q8_purchase_reason"]["options"]
 
 
+def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
+    page = client.get("/s/moody")
+    assert page.status_code == 200
+    assert "universal-survey-background.webp" in page.text
+    assert "不同长宽比只留品牌色安全边" in page.text
+    assert "width:min(100vw,calc(100dvh * 426 / 923))" in page.text
+    assert '<script src="survey-submit.js?v=20260805-3"></script>' in page.text
+
+    adapter = client.get("/s/survey-submit.js")
+    assert adapter.status_code == 200
+    assert adapter.headers["content-type"].startswith("application/javascript")
+    assert 'await api(`/s/${SLUG}/submit`' in adapter.text
+    assert 'await api(`/s/${SLUG}/upgrade`' in adapter.text
+    assert "location.assign(productUrl)" in adapter.text
+
+    artwork = client.get("/s/assets/universal-survey-background.webp")
+    assert artwork.status_code == 200
+    assert artwork.headers["content-type"] == "image/webp"
+    assert "max-age=604800" in artwork.headers["cache-control"]
+
+
 def test_only_beauty_path_returns_two_pack_code(client, db_session, moody):
     token = _claim(client, "fp-only", "10.20.0.1")
     response = client.post("/s/moody-current/submit", headers={"CF-Connecting-IP": "10.20.0.1"}, json={
@@ -87,6 +108,7 @@ def test_only_beauty_path_returns_two_pack_code(client, db_session, moody):
     ).json()
     assert reopen["token_status"] == "submitted_self"
     assert reopen["can_resume_tier2"] is False
+    assert reopen["submission_status"] == "new"
 
 
 def test_both_wear_path_stays_in_progress_then_returns_ten_pack(client, db_session, moody):

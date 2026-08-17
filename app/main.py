@@ -62,14 +62,16 @@ app.include_router(survey.router)
 app.include_router(admin.router)
 
 _web_dir = os.path.join(os.path.dirname(__file__), "..", "web")
+_assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
 mimetypes.add_type("image/webp", ".webp")
 app.mount("/static", StaticFiles(directory=_web_dir), name="static")
+app.mount("/s/assets", StaticFiles(directory=_assets_dir), name="survey-assets")
 
 
 @app.middleware("http")
 async def static_cache_headers(request: Request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith("/static/"):
+    if request.url.path.startswith(("/static/", "/s/assets/")):
         response.headers["Cache-Control"] = "public, max-age=604800, immutable"
     return response
 

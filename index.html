@@ -221,18 +221,19 @@
     .result .notes li{list-style:none;counter-increment:result-step;padding-left:2em;position:relative}
     .result .notes li:first-child{display:none}
     .result .notes li::before{content:counter(result-step);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border-radius:50%;display:grid;place-items:center;background:#ff7b2c;color:#fff;font-family:"Gotham Survey",sans-serif;font-weight:700;line-height:1}
-    /* 手机端始终以 Safari/微信当前可视高度铺满，避免底部按钮落到浏览器工具栏下面。 */
+    /* 手机端按设计稿原始比例整体缩放；不同长宽比只留品牌色安全边，不再裁切或错位。 */
     @media(max-width:768px){
       html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
+      body{display:grid;place-items:center;background:#ffeac8}
       .app,
       .app:has(.shell.q7b1),
       .app:has(.shell.q15),
       .app:has(.shell.q16),
-      .app:has(.shell.degree){width:min(100vw,calc(100dvh * 426 / 828));max-width:none;height:100dvh;min-height:0;aspect-ratio:auto;margin:0 auto!important;background-size:100% auto!important;background-position:center bottom!important;background-repeat:no-repeat!important}
-      .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{top:4.3%;height:3.6%}
-      .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{top:9.9%;height:19.2%}
-      .shell .options{top:31.8%;height:52.4%}
-      .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))){height:52.4%}
+      .app:has(.shell.degree){width:min(100vw,calc(100dvh * 426 / 923));max-width:none;height:min(100dvh,calc(100vw * 923 / 426));min-height:0;aspect-ratio:426/923;margin:auto!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
+      .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{top:14.2%;height:3.2%}
+      .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{top:19.2%;height:17.2%}
+      .shell .options{top:38.8%;height:47%}
+      .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))){height:45%}
       /* 第 12 题：双列选项使用独立行高，避免手机端卡片彼此贴合。 */
       .shell.q13 .options.many{grid-auto-rows:minmax(68px,auto);row-gap:16px!important;column-gap:2%!important;align-content:start;padding:2px 2px 14px!important;overflow-y:auto!important}
       .shell.q13 .options.many > .option{height:68px!important;min-height:68px!important}
@@ -242,11 +243,11 @@
       /* “除 moody 外购买品牌”页：只调整本页的双列间距和滚动边界。 */
       .shell.q9b1 .options.many{grid-auto-rows:minmax(68px,auto);row-gap:16px!important;column-gap:2%!important;align-content:start;padding:2px 2px 14px!important;overflow-y:auto!important}
       .shell.q9b1 .options.many > .option{height:68px!important;min-height:68px!important}
-      .shell.q7b1 .series-select{top:31.9%;height:52.2%;grid-auto-rows:31%;gap:3.5%;padding-bottom:2%}
-      .shell.q15 .media-grid{top:32.4%;height:37.9%}
-      .shell.q15 .options{top:72.1%;height:11.2%}
-      .shell.degree .options{top:43.1%;height:17.8%}
-      .shell .actions,.shell.q15 .actions,.shell.degree .actions{top:91.2%;height:5.8%}
+      .shell.q7b1 .series-select{top:38.5%;height:47.5%;grid-auto-rows:31%;gap:3.5%;padding-bottom:2%}
+      .shell.q15 .media-grid{top:39%;height:34%}
+      .shell.q15 .options{top:75%;height:10%}
+      .shell.degree .options{top:49%;height:16%}
+      .shell .actions,.shell.q15 .actions,.shell.degree .actions{top:92.15%;height:5.2%}
     }
     /* 新兑奖页：以无字品牌插画为底图，所有可读内容使用项目内品牌字体。 */
     .app:has(.reward-v2){width:min(100vw,576px);height:auto;min-height:0;aspect-ratio:852/1847;margin:0 auto!important;padding:0;background:none!important;overflow:hidden}
