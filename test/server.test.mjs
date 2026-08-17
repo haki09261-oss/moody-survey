@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSurveyServer } from '../server.mjs';
@@ -11,6 +11,29 @@ test('前三种购买状态的购买契机题包含新增的三个卖点选项',
   assert.match(question, /被“新手友好”的卖点打动/);
   assert.match(question, /被“水润”“舒适”等佩戴感受卖点打动/);
   assert.match(question, /被“高透氧”“泪循环”等产品参数\/功能打动/);
+});
+
+test('移动端关键图片使用轻量 WebP 资源', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const assets = [
+    'universal-survey-background.webp',
+    'moody-ip-mobile.webp',
+    'q7-product-m-mobile.webp',
+    'q7-product-air-mobile.webp',
+    'q7-product-s-mobile.webp'
+  ];
+  for (const asset of assets) assert.match(html, new RegExp(asset.replace('.', '\\.')));
+  const totalBytes = assets.reduce((sum, asset) => sum + statSync(new URL(`../assets/${asset}`, import.meta.url)).size, 0);
+  assert.ok(totalBytes < 300 * 1024, `关键移动图片总计 ${(totalBytes / 1024).toFixed(0)}KB，应低于 300KB`);
+});
+
+test('版本化 WebP 资源返回长期缓存头', async t => {
+  const app = await setup();
+  t.after(() => new Promise(resolve => app.server.close(resolve)));
+  const response = await fetch(`${app.base}/assets/universal-survey-background.webp?v=test`, { method:'HEAD' });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/webp');
+  assert.match(response.headers.get('cache-control'), /max-age=31536000, immutable/);
 });
 
 async function setup(options = {}) {

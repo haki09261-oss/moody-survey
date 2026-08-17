@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#fff0d7">
   <title>moody 目怡蓝用户调研问卷</title>
+  <link rel="preload" href="assets/universal-survey-background.webp?v=20260817" as="image" type="image/webp" fetchpriority="high">
+  <link rel="preload" href="assets/moody-ip-mobile.webp?v=20260817" as="image" type="image/webp">
   <style>
     @font-face{font-family:"Noto Sans SC Survey";src:url("assets/fonts/NotoSansSC-Regular-survey.woff2?v=20260813") format("woff2");font-style:normal;font-weight:400;font-display:swap}
     @font-face{font-family:"Noto Sans SC Survey";src:url("assets/fonts/NotoSansSC-Medium-survey.woff2?v=20260813") format("woff2");font-style:normal;font-weight:500 600;font-display:swap}
@@ -154,7 +156,7 @@
     .app:has(.shell.q7b1),
     .app:has(.shell.q15),
     .app:has(.shell.q16),
-    .app:has(.shell.degree){width:min(100vw,576px);aspect-ratio:426/923;margin:0 auto!important;background:url("assets/universal-survey-background.png") center/100% 100% no-repeat!important}
+    .app:has(.shell.degree){width:min(100vw,576px);aspect-ratio:426/923;margin:0 auto!important;background:url("assets/universal-survey-background.webp?v=20260817") center/100% 100% no-repeat!important}
     .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{left:33%;top:14.2%;width:34%;height:3.2%;display:flex;align-items:center;justify-content:center;background:transparent!important;box-shadow:none!important;border:0!important}
     .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{left:36.2%;top:19.2%;width:51.5%;height:17.2%;padding:3.5% 4.5% 2.5%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:transparent!important;border:0!important;box-shadow:none!important;transform:none!important;font-size:clamp(18px,4.1vw,24px)!important;line-height:1.48!important;font-weight:700!important}
     .shell .question h2,.shell.q7b1 .question h2,.shell.q15 .question h2,.shell.q16 .question h2,.shell.degree .question h2{font-size:clamp(17px,4.25vw,25px);line-height:1.48;margin:0;color:#f15c25}
@@ -249,7 +251,7 @@
     /* 新兑奖页：以无字品牌插画为底图，所有可读内容使用项目内品牌字体。 */
     .app:has(.reward-v2){width:min(100vw,576px);height:auto;min-height:0;aspect-ratio:852/1847;margin:0 auto!important;padding:0;background:none!important;overflow:hidden}
     .shell.reward-shell{position:absolute;inset:0;overflow:hidden;background:transparent}
-    .reward-v2{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:url("assets/reward-page-clean.png") center/100% 100% no-repeat;color:#4b2c1d;font-family:"Noto Sans SC Survey",sans-serif;text-align:center}
+    .reward-v2{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:url("assets/reward-page-clean.webp?v=20260817") center/100% 100% no-repeat;color:#4b2c1d;font-family:"Noto Sans SC Survey",sans-serif;text-align:center}
     .reward-title{position:absolute;z-index:2;left:38%;top:19.2%;width:53%;font-size:clamp(22px,5.25vw,30px);font-weight:800;line-height:1.38;letter-spacing:.02em;white-space:nowrap}
     .reward-title .title-line{display:flex;align-items:center;justify-content:center;gap:.12em}
     .reward-title .moody-logo{display:block;width:48%;height:auto;flex:none;object-fit:contain;transform:none}
@@ -319,7 +321,7 @@ const routeTotal=()=>{
  return 15;
 };
 function media(q){
- if(q.id==='q7b1'){const cards=[{i:0,img:'assets/m-series.png',name:'目怡蓝 M 系列',desc:'水润保湿 舒适日抛'},{i:1,img:'assets/air-series.png',name:'目怡蓝薄润系列',desc:'轻薄透气 清爽日抛'},{i:2,img:'assets/s-series.png',name:'目怡蓝 S 系列',desc:'锁色持久 自然放大'}];return `<div class="visual-grid series-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}"><strong>${c.name}</strong><em>${c.desc}</em><span>点击选择</span></button>`).join('')}</div>`}
+ if(q.id==='q7b1'){const cards=[{i:0,img:'assets/q7-product-m-mobile.webp?v=20260817',name:'目怡蓝 M 系列',desc:'水润保湿 舒适日抛'},{i:1,img:'assets/q7-product-air-mobile.webp?v=20260817',name:'目怡蓝薄润系列',desc:'轻薄透气 清爽日抛'},{i:2,img:'assets/q7-product-s-mobile.webp?v=20260817',name:'目怡蓝 S 系列',desc:'锁色持久 自然放大'}];return `<div class="visual-grid series-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}" decoding="async"><strong>${c.name}</strong><em>${c.desc}</em><span>点击选择</span></button>`).join('')}</div>`}
  if(q.id==='q15')return `<div class="media-grid three"><img class="product" src="assets/m-series.png"><img class="product" src="assets/air-series.png"><img class="product" src="assets/s-series.png"></div>`;
  if(q.id==='q16'){const cards=[{i:0,img:'assets/package-a.png',name:'新包装 Demo A'},{i:1,img:'assets/package-b.png',name:'新包装 Demo B'}];return `<div class="visual-grid pack-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}"><strong>${c.name}</strong><span>点击选择</span></button>`).join('')}</div>`}
  return ''}
@@ -336,7 +338,7 @@ function render(){
    }).join('');
  if(!q.select&&!q.media&&q.o.length<8)opts+=Array.from({length:8-q.o.length},()=>`<span class="option placeholder"></span>`).join('');
  screen.className='shell '+q.id;
- screen.innerHTML=`<div class="ring"></div><i class="spark s1">★</i><i class="spark s2">✦</i><i class="spark s3">★</i><div class="progress"><i style="width:${(pos+1)/routeTotal()*100}%"></i></div><div class="counter">第 <b>${pos+1}</b> 题 / 共 <b>${routeTotal()}</b> 题</div><div class="hero"><img class="mascot" src="${A}assets/moody-ip.png" alt="moody IP 形象"><div class="question ${q.t.length>28?'long':''}"><div>${q.t}<small class="hint">${hint}</small></div></div></div>${media(q)}<div class="options ${!q.select&&q.o.length>8?'many':''} ${q.id}">${opts}</div><div class="actions"><button class="btn back" ${pos?'':'disabled'}>上一步</button><button class="btn next" ${draft.length?'':'disabled'}>${pos===path.length-1?'提交问卷':'下一题 →'}</button></div>`;
+ screen.innerHTML=`<div class="ring"></div><i class="spark s1">★</i><i class="spark s2">✦</i><i class="spark s3">★</i><div class="progress"><i style="width:${(pos+1)/routeTotal()*100}%"></i></div><div class="counter">第 <b>${pos+1}</b> 题 / 共 <b>${routeTotal()}</b> 题</div><div class="hero"><img class="mascot" src="${A}assets/moody-ip-mobile.webp?v=20260817" alt="moody IP 形象" decoding="async" fetchpriority="high"><div class="question ${q.t.length>28?'long':''}"><div>${q.t}<small class="hint">${hint}</small></div></div></div>${media(q)}<div class="options ${!q.select&&q.o.length>8?'many':''} ${q.id}">${opts}</div><div class="actions"><button class="btn back" ${pos?'':'disabled'}>上一步</button><button class="btn next" ${draft.length?'':'disabled'}>${pos===path.length-1?'提交问卷':'下一题 →'}</button></div>`;
  screen.querySelectorAll('.option,.visual-choice').forEach(el=>el.onclick=()=>pick(q,+el.dataset.i));
  const q7List=screen.querySelector('.series-select');if(q.id==='q7b1'&&q7List){q7List.scrollTop=q7ScrollTop;q7List.onscroll=()=>{q7ScrollTop=q7List.scrollTop}}
  const optionList=screen.querySelector('.options');if(optionList&&!q.select&&!['q7b1','q15','q16'].includes(q.id)){optionList.scrollTop=optionScrollByQuestion[q.id]||0;optionList.onscroll=()=>{optionScrollByQuestion[q.id]=optionList.scrollTop}}
@@ -347,7 +349,7 @@ function pick(q,i){if(q.m){if(draft.includes(i)){draft=draft.filter(x=>x!==i);if
 function sync(){const b=screen.querySelector('.next');b.disabled=!draft.length}
 function next(){const q=path[pos];if(!draft.length)return show('请选择一个答案');const other=screen.querySelector('#other');if(q.other!==undefined&&draft.includes(q.other)&&(!other||!other.value.trim()))return show('请填写“其他”内容');if(other&&q.otherMax&&other.value.trim().length>q.otherMax)return show(`其他内容不能超过 ${q.otherMax} 字`);ans[q.id]=[...draft];if(other)ans[q.id+'Text']=other.value.trim();if(pos<active().length-1){pos++;render();scrollTo({top:0,behavior:'smooth'})}else result()}
 function back(){if(!pos)return;pos--;render();scrollTo({top:0,behavior:'smooth'})}
-function result(){scrollTo({top:0,behavior:'smooth'});const fail=ans.q5a?.includes(1)||ans.q10b3?.includes(4);const code='WJ-'+Math.random().toString(36).slice(2,8).toUpperCase()+'-02';screen.innerHTML=fail?`<div class="result fail"><div class="brand">moody <b>用户调研问卷</b></div><img class="result-ip" src="${A}assets/moody-ip.png"><div class="result-panel"><div class="badge">!</div><h1>很抱歉，暂未获得领奖资格</h1><p>感谢您的参与！</p><p>经系统判断，您本次填写暂未符合活动领奖条件，因此无法生成兑换码。</p><p>别灰心，后续 moody 还会不定期开放更多福利活动，期待下次与您见面～</p></div><button class="btn back redeem" onclick="restart()">重新填写</button></div>`:`<div class="result"><div class="brand">moody <b>用户调研问卷</b></div><img class="result-ip" src="${A}assets/moody-ip.png"><div class="result-panel"><div class="badge">✓</div><h1>提交成功！</h1><p>您的兑换码如下，点击“去兑奖”将自动复制并前往下单。</p><div class="code" id="code">${code}</div><button class="btn next redeem" id="redeem">去兑奖 →</button></div><div class="notes"><b>★ 使用说明</b><ol><li>本问卷分为两部分：第一部分较短，提交后即可获得兑换码。</li><li>点击“去兑奖”会自动复制兑换码。</li><li>下单时在订单备注中粘贴该兑换码，即可领取对应奖励。</li><li>每台设备仅可填写一次。</li></ol></div></div>`;const r=document.querySelector('#redeem');if(r)r.onclick=async()=>{try{await navigator.clipboard.writeText(code);show('兑换码已复制')}catch{show('请长按复制兑换码')}}}
+function result(){scrollTo({top:0,behavior:'smooth'});const fail=ans.q5a?.includes(1)||ans.q10b3?.includes(4);const code='WJ-'+Math.random().toString(36).slice(2,8).toUpperCase()+'-02';screen.innerHTML=fail?`<div class="result fail"><div class="brand">moody <b>用户调研问卷</b></div><img class="result-ip" src="${A}assets/moody-ip-mobile.webp?v=20260817" decoding="async"><div class="result-panel"><div class="badge">!</div><h1>很抱歉，暂未获得领奖资格</h1><p>感谢您的参与！</p><p>经系统判断，您本次填写暂未符合活动领奖条件，因此无法生成兑换码。</p><p>别灰心，后续 moody 还会不定期开放更多福利活动，期待下次与您见面～</p></div><button class="btn back redeem" onclick="restart()">重新填写</button></div>`:`<div class="result"><div class="brand">moody <b>用户调研问卷</b></div><img class="result-ip" src="${A}assets/moody-ip-mobile.webp?v=20260817" decoding="async"><div class="result-panel"><div class="badge">✓</div><h1>提交成功！</h1><p>您的兑换码如下，点击“去兑奖”将自动复制并前往下单。</p><div class="code" id="code">${code}</div><button class="btn next redeem" id="redeem">去兑奖 →</button></div><div class="notes"><b>★ 使用说明</b><ol><li>本问卷分为两部分：第一部分较短，提交后即可获得兑换码。</li><li>点击“去兑奖”会自动复制兑换码。</li><li>下单时在订单备注中粘贴该兑换码，即可领取对应奖励。</li><li>每台设备仅可填写一次。</li></ol></div></div>`;const r=document.querySelector('#redeem');if(r)r.onclick=async()=>{try{await navigator.clipboard.writeText(code);show('兑换码已复制')}catch{show('请长按复制兑换码')}}}
 function restart(){ans={};pos=0;render()}render();
 </script>
 <script>
@@ -359,9 +361,9 @@ function restart(){ans={};pos=0;render()}render();
     ['S日抛']
   ];
   const question7Products = [
-    ['assets/q7-product-m.png', '目怡蓝 M 系列'],
-    ['assets/q7-product-air.png', '目怡蓝薄润系列'],
-    ['assets/q7-product-s.png', '目怡蓝 S 系列']
+    ['assets/q7-product-m-mobile.webp?v=20260817', '目怡蓝 M 系列'],
+    ['assets/q7-product-air-mobile.webp?v=20260817', '目怡蓝薄润系列'],
+    ['assets/q7-product-s-mobile.webp?v=20260817', '目怡蓝 S 系列']
   ];
   const ensureQuestion14Copy = () => {
     if (surveyScreen.classList.contains('q7b1')) {
@@ -404,7 +406,7 @@ function restart(){ans={};pos=0;render()}render();
     screen.innerHTML = `
       <div class="reward-v2">
         <div class="reward-title" aria-label="moody 老朋友白片探索计划">
-          <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.png" alt="moody"><span>老朋友</span></div>
+          <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.webp?v=20260817" alt="moody" decoding="async"><span>老朋友</span></div>
           <div><em>白片</em>探索计划</div>
         </div>
         <div class="reward-copy">提交成功！您的兑换码如下，<br>点「去兑奖」将自动复制并前往下单<br>（在订单备注粘贴即可领奖）：</div>

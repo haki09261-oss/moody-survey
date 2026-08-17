@@ -35,7 +35,7 @@
   const rewardPage = (code, prizeName, degreeLabel) => `
     <div class="reward-v2">
       <div class="reward-title" aria-label="moody 老朋友白片探索计划">
-        <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.png" alt="moody"><span>老朋友</span></div>
+        <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.webp?v=20260817" alt="moody" decoding="async"><span>老朋友</span></div>
         <div><em>白片</em>探索计划</div>
       </div>
       <div class="reward-copy">提交成功！奖品为${prizeName || '专属试用装'}（${degreeLabel || '所选度数'}）<br>点击「去兑奖」自动复制并前往天猫<br>（下单时请在订单备注粘贴兑换码）：</div>
@@ -54,7 +54,7 @@
   const statusPage = (title, copy, retry = false, warning = false) => `
     <div class="reward-v2 status-v2 ${retry || warning ? 'status-warning' : ''}">
       <div class="reward-title" aria-label="moody 老朋友白片探索计划">
-        <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.png" alt="moody"><span>老朋友</span></div>
+        <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.webp?v=20260817" alt="moody" decoding="async"><span>老朋友</span></div>
         <div><em>白片</em>探索计划</div>
       </div>
       <section class="status-card-v2">

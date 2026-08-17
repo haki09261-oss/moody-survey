@@ -12,7 +12,7 @@ const DEFAULT_TMALL_REDEEM_URL = 'https://detail.tmall.com/item.htm?id=107297279
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
   '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.otf': 'font/otf'
 };
 
@@ -533,10 +533,16 @@ export function createSurveyServer(options = {}) {
       if (pathname === '/admin') pathname = '/admin.html';
       const file = resolve(root, `.${normalize(pathname)}`);
       const resolvedRoot = resolve(root);
-      if (!(file === resolvedRoot || file.startsWith(`${resolvedRoot}${sep}`)) || !existsSync(file) || !statSync(file).isFile()) return json(res, 404, { error: '页面不存在' });
+      if (!(file === resolvedRoot || file.startsWith(`${resolvedRoot}${sep}`)) || !existsSync(file)) return json(res, 404, { error: '页面不存在' });
+      const fileStat = statSync(file);
+      if (!fileStat.isFile()) return json(res, 404, { error: '页面不存在' });
+      const noCache = pathname.endsWith('.html') || pathname === '/survey-submit.js';
+      const versionedAsset = url.searchParams.has('v');
       res.writeHead(200, {
         'content-type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
-        'cache-control': pathname.endsWith('.html') || pathname === '/survey-submit.js' ? 'no-cache' : 'public, max-age=86400',
+        'cache-control': noCache ? 'no-cache' : versionedAsset ? 'public, max-age=31536000, immutable' : 'public, max-age=604800',
+        'content-length': fileStat.size,
+        'last-modified': fileStat.mtime.toUTCString(),
         'x-content-type-options': 'nosniff',
         'referrer-policy': 'same-origin'
       });
