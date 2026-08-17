@@ -16,7 +16,8 @@
     @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Book.otf") format("opentype");font-style:normal;font-weight:400;font-display:swap}
     @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Medium.otf") format("opentype");font-style:normal;font-weight:500 600;font-display:swap}
     @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Bold.otf") format("opentype");font-style:normal;font-weight:700 900;font-display:swap}
-    :root{--orange:#ff7928;--orange2:#ff9a4c;--ink:#4a2b1e;--cream:#fff4df;--paper:#fffdf8;--line:#f3c68e;--blue:#b8c9ff}
+    :root{--orange:#ff7928;--orange2:#ff9a4c;--ink:#4a2b1e;--cream:#fff4df;--paper:#fffdf8;--line:#f3c68e;--blue:#b8c9ff;--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--usable-vw:calc(100vw - var(--safe-left) - var(--safe-right));--usable-vh:calc(100vh - var(--safe-top) - var(--safe-bottom))}
+    @supports(height:100dvh){:root{--usable-vh:calc(100dvh - var(--safe-top) - var(--safe-bottom))}}
     *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;color:var(--ink);background:#ffe8c5}
     button,input,textarea,select{font:inherit}.app{width:min(100%,480px);min-height:100dvh;margin:auto;position:relative;overflow:hidden;background:radial-gradient(circle at 94% 7%,#ffd795 0 13%,transparent 14%),linear-gradient(160deg,#fff4de,#ffe5bb);padding:22px 14px calc(20px + env(safe-area-inset-bottom))}
     .app:before,.app:after{content:"";position:absolute;z-index:0;width:150px;height:150px;border:14px solid rgba(255,134,48,.18);border-radius:50%}.app:before{top:-90px;right:-70px}.app:after{bottom:-110px;left:-70px}
@@ -37,7 +38,7 @@
 
     /* 576 × 1024 像素级复刻层：参考图本身作为唯一视觉底稿 */
     html,body{background:#ffeac8;overflow-x:hidden}
-    .app{width:min(100vw,576px);min-height:0;height:auto;aspect-ratio:9/16;margin:0 auto 78px;padding:0;overflow:visible;background:url('assets/reference-template-clean.png') center/100% 100% no-repeat}
+    .app{width:min(100vw,576px);min-height:0;height:auto;aspect-ratio:9/16;margin:0 auto 78px;padding:0;overflow:visible;container-type:inline-size;background:url('assets/reference-template-clean.png') center/100% 100% no-repeat}
     .app:before,.app:after,.ring,.spark,.progress,.mascot{display:none!important}
     .shell{position:absolute;inset:0;min-height:0;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0;display:block;overflow:visible}
     .counter{position:absolute;z-index:3;top:11.35%;left:35%;width:31%;height:5.2%;display:flex;align-items:center;justify-content:center;background:transparent;color:#4a3023;font-size:clamp(11px,2.43vw,14px);font-weight:700;letter-spacing:1px;white-space:nowrap}
@@ -223,13 +224,14 @@
     .result .notes li::before{content:counter(result-step);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border-radius:50%;display:grid;place-items:center;background:#ff7b2c;color:#fff;font-family:"Gotham Survey",sans-serif;font-weight:700;line-height:1}
     /* 手机端按设计稿原始比例整体缩放；不同长宽比只留品牌色安全边，不再裁切或错位。 */
     @media(max-width:768px){
-      html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
-      body{display:grid;place-items:center;background:#ffeac8}
+      html,body{width:100%;height:100vh;min-height:100vh;overflow:hidden}
+      @supports(height:100dvh){html,body{height:100dvh;min-height:100dvh}}
+      body{display:grid;place-items:center;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);background:#ffeac8}
       .app,
       .app:has(.shell.q7b1),
       .app:has(.shell.q15),
       .app:has(.shell.q16),
-      .app:has(.shell.degree){width:min(100vw,calc(100dvh * 426 / 923));max-width:none;height:min(100dvh,calc(100vw * 923 / 426));min-height:0;aspect-ratio:426/923;margin:auto!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
+      .app:has(.shell.degree){width:min(var(--usable-vw),calc(var(--usable-vh) * 426 / 923));max-width:none;height:min(var(--usable-vh),calc(var(--usable-vw) * 923 / 426));min-height:0;aspect-ratio:426/923;margin:auto!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
       .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{top:14.2%;height:3.2%}
       .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{top:19.2%;height:17.2%}
       .shell .options{top:38.8%;height:47%}
@@ -258,7 +260,7 @@
     .reward-title .moody-logo{display:block;width:48%;height:auto;flex:none;object-fit:contain;transform:none}
     .reward-title em{font-style:normal;color:#f35e16;margin-right:.16em}
     .reward-copy{position:absolute;z-index:2;left:18%;top:36.9%;width:66%;font-size:clamp(13px,3.1vw,17px);font-weight:600;line-height:1.55;letter-spacing:.015em}
-    .reward-code{position:absolute;z-index:2;left:15.8%;top:45.4%;width:68.4%;height:7.1%;display:flex;align-items:center;justify-content:center;font-family:"Gotham Survey",sans-serif;font-size:clamp(22px,6vw,35px);font-weight:900;color:#f75c15;letter-spacing:.035em;user-select:all}
+    .reward-code{position:absolute;z-index:2;left:15.8%;top:45.4%;width:68.4%;height:7.1%;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:"Gotham Survey",sans-serif;font-size:clamp(22px,6vw,35px);font-weight:900;color:#f75c15;letter-spacing:.035em;white-space:nowrap;user-select:all}
     .reward-redeem{position:absolute;z-index:3;left:12.6%;top:56.25%;width:74.8%;height:5.55%;border:0;border-radius:999px;background:transparent;color:#fff;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(14px,3.7vw,22px);font-weight:600;line-height:1;letter-spacing:.02em;cursor:pointer;padding:0}
     .reward-redeem-label{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);display:inline-grid;grid-template-columns:auto auto;align-items:center;justify-content:center;gap:.35em;width:max-content;margin:0;white-space:nowrap}
     .reward-instructions{position:absolute;z-index:2;left:14.4%;top:63.75%;width:71.2%;text-align:left}
@@ -270,14 +272,18 @@
     .reward-instructions li::before{content:counter(reward-step);position:absolute;left:1%;top:calc(50% + 4px);transform:translateY(-50%);box-sizing:border-box;width:5.7%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:4px 0 0;color:#fff;font-family:"Gotham Survey",sans-serif;font-size:clamp(10.5px,2.55vw,14px);font-weight:700;line-height:1}
     .reward-instructions li:nth-child(3)>span{transform:translateY(9px)}
     .reward-instructions li:nth-child(3)::before{transform:translateY(calc(-50% + 2px))}
+    @supports(font-size:1cqw){
+      .reward-title{font-size:clamp(15px,5.6cqw,30px)}
+      .reward-copy{font-size:clamp(9px,3.1cqw,17px)}
+      .reward-code{font-size:clamp(14px,5.6cqw,35px);letter-spacing:.015em}
+      .reward-redeem{font-size:clamp(12px,3.7cqw,22px)}
+      .reward-instructions h2{font-size:clamp(12px,4cqw,23px)}
+      .reward-instructions li{font-size:clamp(6.8px,2.55cqw,14px)}
+    }
     @media(max-width:768px){
-      .app:has(.reward-v2){width:min(100vw,576px);height:100dvh;aspect-ratio:auto;margin:0 auto!important}
+      .app:has(.reward-v2){width:min(var(--usable-vw),calc(var(--usable-vh) * 852 / 1847));height:min(var(--usable-vh),calc(var(--usable-vw) * 1847 / 852));aspect-ratio:852/1847;margin:auto!important}
       .shell.reward-shell{inset:0}
-      .reward-v2{
-        top:min(0px,calc(100dvh - (min(100vw,576px) * 1847 / 852) + 3.1vw));
-        bottom:auto;
-        height:calc(min(100vw,576px) * 1847 / 852)
-      }
+      .reward-v2{top:0;bottom:0;height:100%}
     }
   </style>
 </head>

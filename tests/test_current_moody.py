@@ -77,7 +77,13 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert page.status_code == 200
     assert "universal-survey-background.webp" in page.text
     assert "不同长宽比只留品牌色安全边" in page.text
-    assert "width:min(100vw,calc(100dvh * 426 / 923))" in page.text
+    assert "--safe-top:env(safe-area-inset-top,0px)" in page.text
+    assert "--usable-vh:calc(100dvh - var(--safe-top) - var(--safe-bottom))" in page.text
+    assert "width:min(var(--usable-vw),calc(var(--usable-vh) * 426 / 923))" in page.text
+    assert "width:min(var(--usable-vw),calc(var(--usable-vh) * 852 / 1847))" in page.text
+    assert "container-type:inline-size" in page.text
+    assert "font-size:clamp(14px,5.6cqw,35px)" in page.text
+    assert "white-space:nowrap;user-select:all" in page.text
     assert '<script src="survey-submit.js?v=20260805-3"></script>' in page.text
 
     adapter = client.get("/s/survey-submit.js")

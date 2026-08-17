@@ -79,16 +79,16 @@
           <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.webp?v=20260817" alt="moody" decoding="async"><span>老朋友</span></div>
           <div><em>白片</em>探索计划</div>
         </div>
-        <div class="reward-copy">提交成功！奖品为 ${prize}（${degree} 度）<br>点「去兑奖」将自动复制并前往下单<br>（在订单备注粘贴即可领奖）：</div>
+        <div class="reward-copy">提交成功！${prize}（${degree} 度）<br>点「去兑奖」复制兑换码并打开淘宝<br>下单时粘贴到订单备注即可领奖</div>
         <div class="reward-code" id="code">${code}</div>
         <button class="reward-redeem" id="redeem" type="button"><span class="reward-redeem-label">去兑奖 <span aria-hidden="true">→</span></span></button>
         <section class="reward-instructions" aria-labelledby="reward-notes-title">
           <img class="reward-notes-star" src="assets/reward-notes-star.png" alt="">
           <h2 id="reward-notes-title">使用说明</h2>
           <ol>
-            <li><span>点「去兑奖」会复制兑换码，并询问是否打开淘宝 App。</span></li>
-            <li><span>下单时在订单备注中粘贴兑换码，即可领取对应奖品。</span></li>
-            <li><span>每台设备和每个 IP 仅可参与一次，每个码仅可核销一次。</span></li>
+            <li><span>点「去兑奖」复制兑换码，并选择打开淘宝 App。</span></li>
+            <li><span>下单时把兑换码粘贴到订单备注。</span></li>
+            <li><span>每台设备限一次，每个码限核销一次。</span></li>
           </ol>
         </section>
       </div>`;
