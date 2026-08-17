@@ -222,19 +222,19 @@
     .result .notes li{list-style:none;counter-increment:result-step;padding-left:2em;position:relative}
     .result .notes li:first-child{display:none}
     .result .notes li::before{content:counter(result-step);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border-radius:50%;display:grid;place-items:center;background:#ff7b2c;color:#fff;font-family:"Gotham Survey",sans-serif;font-weight:700;line-height:1}
-    /* 手机端以兑奖页实机效果为基准：安全区内横向铺满、纵向贴合可视区域。 */
+    /* 手机端横向铺满，画布保持原始比例并在短屏中上下居中裁切，避免 IP 与题目被拉伸。 */
     @media(max-width:768px){
       html,body{width:100%;height:100vh;min-height:100vh;overflow:hidden}
       @supports(height:100dvh){html,body{height:100dvh;min-height:100dvh}}
-      body{display:grid;place-items:center;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);background:#ffeac8}
+      body{display:block;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);background:#ffeac8}
       .app,
       .app:has(.shell.q7b1),
       .app:has(.shell.q15),
       .app:has(.shell.q16),
-      .app:has(.shell.degree){width:var(--usable-vw);max-width:none;height:var(--usable-vh);min-height:0;aspect-ratio:auto;margin:auto!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
+      .app:has(.shell.degree){width:var(--usable-vw);max-width:none;height:calc(var(--usable-vw) * 923 / 426);min-height:0;aspect-ratio:426/923;margin:auto!important;transform:translateY(calc((var(--usable-vh) - 100%) / 2));background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
       .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{top:14.2%;height:3.2%}
       .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{top:19.2%;height:17.2%}
-      .shell .options{top:38.8%;height:47%}
+      .shell .options{top:38.8%;height:45%}
       .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))){height:45%}
       /* 第 12 题：双列选项使用独立行高，避免手机端卡片彼此贴合。 */
       .shell.q13 .options.many{grid-auto-rows:minmax(68px,auto);row-gap:16px!important;column-gap:2%!important;align-content:start;padding:2px 2px 14px!important;overflow-y:auto!important}
@@ -249,7 +249,15 @@
       .shell.q15 .media-grid{top:39%;height:34%}
       .shell.q15 .options{top:75%;height:10%}
       .shell.degree .options{top:49%;height:16%}
-      .shell .actions,.shell.q15 .actions,.shell.degree .actions{top:92.15%;height:5.2%}
+      .shell .actions,.shell.q15 .actions,.shell.degree .actions{top:calc((100% - var(--usable-vh)) / 2 + var(--usable-vh) * .9215);height:calc(var(--usable-vh) * .052)}
+      .shell .actions .btn,.shell.q15 .actions .btn,.shell.degree .actions .btn{transform:none!important;border-radius:999px!important}
+      .shell .actions .back,.shell.q15 .actions .back,.shell.degree .actions .back{background:#fff8ed!important;border:1px solid #efcf9f!important;box-shadow:0 4px 10px rgba(180,95,30,.16)!important}
+      .shell .actions .next,.shell.q15 .actions .next,.shell.degree .actions .next{background:linear-gradient(180deg,#ff963c,#ff6718)!important;box-shadow:0 4px 0 #dd5b19,0 8px 15px rgba(255,121,40,.24)!important}
+      .shell .actions .next:disabled,.shell.q15 .actions .next:disabled,.shell.degree .actions .next:disabled{opacity:.42!important;box-shadow:none!important}
+    }
+    @media(max-width:360px) and (max-height:700px){
+      .shell.q6a .options{gap:6px!important}
+      .shell.q6a .options:not(.q7b1):not(.q15):not(.q16)>.option:not(.placeholder){height:52px!important;min-height:52px!important;flex:0 0 52px!important}
     }
     /* 新兑奖页：以无字品牌插画为底图，所有可读内容使用项目内品牌字体。 */
     .app:has(.reward-v2){width:min(100vw,576px);height:auto;min-height:0;aspect-ratio:852/1847;margin:0 auto!important;padding:0;background:none!important;overflow:hidden}
@@ -281,7 +289,7 @@
       .reward-instructions li{font-size:clamp(6.8px,2.55cqw,14px)}
     }
     @media(max-width:768px){
-      .app:has(.reward-v2){width:var(--usable-vw);height:var(--usable-vh);aspect-ratio:auto;margin:auto!important}
+      .app:has(.reward-v2){width:var(--usable-vw);height:calc(var(--usable-vw) * 1847 / 852);aspect-ratio:852/1847;margin:auto!important;transform:translateY(calc((var(--usable-vh) - 100%) / 2))}
       .shell.reward-shell{inset:0}
       .reward-v2{top:0;bottom:0;height:100%}
     }
@@ -333,6 +341,7 @@ function media(q){
  if(q.id==='q16'){const cards=[{i:0,img:'assets/package-a.png',name:'新包装 Demo A'},{i:1,img:'assets/package-b.png',name:'新包装 Demo B'}];return `<div class="visual-grid pack-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}"><strong>${c.name}</strong><span>点击选择</span></button>`).join('')}</div>`}
  return ''}
 function show(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
+function resetViewportScroll(){document.body.scrollTop=0;document.documentElement.scrollTop=0;window.scrollTo(0,0)}
 function render(){
  path=active();pos=Math.min(pos,path.length-1);const q=path[pos];draft=[...(ans[q.id]||[])];
  const hint=q.select?'请选择度数':q.m?`多选${q.max?`，最多选 ${q.max} 项`:''}`:'单选';
@@ -351,6 +360,7 @@ function render(){
  const optionList=screen.querySelector('.options');if(optionList&&!q.select&&!['q7b1','q15','q16'].includes(q.id)){optionList.scrollTop=optionScrollByQuestion[q.id]||0;optionList.onscroll=()=>{optionScrollByQuestion[q.id]=optionList.scrollTop}}
  const other=screen.querySelector('#other');if(other){other.value=ans[q.id+'Text']||'';other.oninput=()=>{if(q.otherMax&&other.value.length>q.otherMax)other.value=other.value.slice(0,q.otherMax);ans[q.id+'Text']=other.value;const count=screen.querySelector('.other-count');if(count)count.textContent=`${other.value.length}/${q.otherMax||500}`}}
  const sel=screen.querySelector('#degree');if(sel)sel.onchange=()=>{draft=sel.value===''?[]:[+sel.value];sync()};screen.querySelector('.back').onclick=back;screen.querySelector('.next').onclick=next
+ resetViewportScroll();requestAnimationFrame(resetViewportScroll)
 }
 function pick(q,i){if(q.m){if(draft.includes(i)){draft=draft.filter(x=>x!==i);if(q.other===i)delete ans[q.id+'Text']}else if(draft.length>=(q.max||99))return show(`最多选择 ${q.max} 项`);else draft.push(i)}else draft=[i];ans[q.id]=[...draft];render()}
 function sync(){const b=screen.querySelector('.next');b.disabled=!draft.length}

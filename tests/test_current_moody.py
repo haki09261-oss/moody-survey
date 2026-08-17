@@ -76,11 +76,17 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     page = client.get("/s/moody")
     assert page.status_code == 200
     assert "universal-survey-background.webp" in page.text
-    assert "安全区内横向铺满、纵向贴合可视区域" in page.text
+    assert "画布保持原始比例并在短屏中上下居中裁切" in page.text
     assert "--safe-top:env(safe-area-inset-top,0px)" in page.text
     assert "--usable-vh:calc(100dvh - var(--safe-top) - var(--safe-bottom))" in page.text
-    assert "width:var(--usable-vw);max-width:none;height:var(--usable-vh)" in page.text
-    assert "width:var(--usable-vw);height:var(--usable-vh);aspect-ratio:auto" in page.text
+    assert "width:var(--usable-vw);max-width:none;height:calc(var(--usable-vw) * 923 / 426)" in page.text
+    assert "width:var(--usable-vw);height:calc(var(--usable-vw) * 1847 / 852)" in page.text
+    assert "transform:translateY(calc((var(--usable-vh) - 100%) / 2))" in page.text
+    assert "body{display:block;padding:var(--safe-top)" in page.text
+    assert "var(--usable-vh) * .9215" in page.text
+    assert "background:linear-gradient(180deg,#ff963c,#ff6718)!important" in page.text
+    assert "function resetViewportScroll()" in page.text
+    assert ".shell.q6a .options:not(.q7b1):not(.q15):not(.q16)>.option:not(.placeholder){height:52px!important;min-height:52px!important;flex:0 0 52px!important}" in page.text
     assert "container-type:inline-size" in page.text
     assert "font-size:clamp(14px,5.6cqw,35px)" in page.text
     assert "white-space:nowrap;user-select:all" in page.text
