@@ -222,7 +222,7 @@
     .result .notes li{list-style:none;counter-increment:result-step;padding-left:2em;position:relative}
     .result .notes li:first-child{display:none}
     .result .notes li::before{content:counter(result-step);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border-radius:50%;display:grid;place-items:center;background:#ff7b2c;color:#fff;font-family:"Gotham Survey",sans-serif;font-weight:700;line-height:1}
-    /* 手机端按设计稿原始比例整体缩放；不同长宽比只留品牌色安全边，不再裁切或错位。 */
+    /* 手机端以兑奖页实机效果为基准：安全区内横向铺满、纵向贴合可视区域。 */
     @media(max-width:768px){
       html,body{width:100%;height:100vh;min-height:100vh;overflow:hidden}
       @supports(height:100dvh){html,body{height:100dvh;min-height:100dvh}}
@@ -231,7 +231,7 @@
       .app:has(.shell.q7b1),
       .app:has(.shell.q15),
       .app:has(.shell.q16),
-      .app:has(.shell.degree){width:min(var(--usable-vw),calc(var(--usable-vh) * 426 / 923));max-width:none;height:min(var(--usable-vh),calc(var(--usable-vw) * 923 / 426));min-height:0;aspect-ratio:426/923;margin:auto!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
+      .app:has(.shell.degree){width:var(--usable-vw);max-width:none;height:var(--usable-vh);min-height:0;aspect-ratio:auto;margin:auto!important;background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
       .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{top:14.2%;height:3.2%}
       .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{top:19.2%;height:17.2%}
       .shell .options{top:38.8%;height:47%}
@@ -281,7 +281,7 @@
       .reward-instructions li{font-size:clamp(6.8px,2.55cqw,14px)}
     }
     @media(max-width:768px){
-      .app:has(.reward-v2){width:min(var(--usable-vw),calc(var(--usable-vh) * 852 / 1847));height:min(var(--usable-vh),calc(var(--usable-vw) * 1847 / 852));aspect-ratio:852/1847;margin:auto!important}
+      .app:has(.reward-v2){width:var(--usable-vw);height:var(--usable-vh);aspect-ratio:auto;margin:auto!important}
       .shell.reward-shell{inset:0}
       .reward-v2{top:0;bottom:0;height:100%}
     }

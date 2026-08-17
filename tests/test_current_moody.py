@@ -76,11 +76,11 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     page = client.get("/s/moody")
     assert page.status_code == 200
     assert "universal-survey-background.webp" in page.text
-    assert "不同长宽比只留品牌色安全边" in page.text
+    assert "安全区内横向铺满、纵向贴合可视区域" in page.text
     assert "--safe-top:env(safe-area-inset-top,0px)" in page.text
     assert "--usable-vh:calc(100dvh - var(--safe-top) - var(--safe-bottom))" in page.text
-    assert "width:min(var(--usable-vw),calc(var(--usable-vh) * 426 / 923))" in page.text
-    assert "width:min(var(--usable-vw),calc(var(--usable-vh) * 852 / 1847))" in page.text
+    assert "width:var(--usable-vw);max-width:none;height:var(--usable-vh)" in page.text
+    assert "width:var(--usable-vw);height:var(--usable-vh);aspect-ratio:auto" in page.text
     assert "container-type:inline-size" in page.text
     assert "font-size:clamp(14px,5.6cqw,35px)" in page.text
     assert "white-space:nowrap;user-select:all" in page.text
