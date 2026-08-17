@@ -1,0 +1,12 @@
+data/
+tools/
+node_modules/
+assets/fonts/NotoSansSC-*.otf
+
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+Thumbs.db

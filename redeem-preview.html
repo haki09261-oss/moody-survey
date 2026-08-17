@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>天猫 0.01 元链接跳转预览</title>
+  <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff6e9;color:#4d2e1e;font-family:system-ui,"Noto Sans SC",sans-serif}.card{width:min(420px,calc(100% - 40px));padding:30px;border:1px solid #f1d1aa;border-radius:24px;background:#fff;text-align:center;box-shadow:0 12px 35px #7f4b1718}b{color:#f15b20;font-size:24px}p{line-height:1.8;color:#725c4d}a{display:inline-block;margin-top:12px;padding:12px 24px;border-radius:999px;background:#f15b20;color:#fff;text-decoration:none;font-weight:700}</style>
+</head>
+<body><main class="card"><b>天猫跳转机制预览</b><p id="copy"></p><p>正式上线后，这一页会替换为对应奖品的天猫 0.01 元商品链接。兑换码已经在跳转前复制，请在订单备注中粘贴。</p><a href="/">返回问卷</a></main><script>const sku=new URLSearchParams(location.search).get('sku');document.querySelector('#copy').textContent=`当前奖品：${sku==='M10'?'M系列10片装':'M系列2片装'}`</script></body>
+</html>

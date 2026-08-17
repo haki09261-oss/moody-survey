@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>moody 问卷兑奖后台</title>
+  <style>
+    :root{font-family:"Noto Sans SC",system-ui,sans-serif;color:#3d2a21;background:#fff7eb;--orange:#f56b24;--green:#138a67;--red:#c2413a}
+    *{box-sizing:border-box}body{margin:0}.wrap{width:min(1180px,calc(100% - 32px));margin:36px auto}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}h1{margin:0;font-size:27px}.muted{color:#806f65;font-size:13px}.card{background:#fff;border:1px solid #efdfce;border-radius:18px;box-shadow:0 8px 25px #7d4a1910;padding:20px}.login{width:min(420px,calc(100% - 32px));margin:14vh auto}.login input{width:100%;margin:14px 0}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.stat b{display:block;font-size:28px;margin-top:6px}.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}input,select,button{height:42px;border:1px solid #dbc8b5;border-radius:10px;background:#fff;padding:0 13px;font:inherit}input{min-width:220px}button{cursor:pointer;font-weight:650}button.primary{border-color:var(--orange);background:var(--orange);color:#fff}button.danger{border-color:var(--red);color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}.table-card{padding:0;overflow:hidden}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:13px 12px;border-bottom:1px solid #f0e7dd;text-align:left;font-size:13px;vertical-align:top}th{position:sticky;top:0;background:#fffaf4;color:#6f5a4c;z-index:1}.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:700;font-size:12px}.valid,.issued{background:#e8f7f0;color:var(--green)}.invalid{background:#fff0ee;color:var(--red)}.redeemed{background:#eee;color:#555}.code{font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.05em}.empty{text-align:center;padding:50px;color:#806f65}.detail{max-width:310px;white-space:normal;line-height:1.55}.detail summary{cursor:pointer;color:#8e512e}.detail dl{margin:10px 0}.detail dt{font-weight:700;margin-top:8px}.detail dd{margin:2px 0;color:#65554b}.error{color:var(--red);min-height:20px}.hidden{display:none!important}.modal{position:fixed;inset:0;background:#27160f80;display:grid;place-items:center;padding:20px;z-index:10}.modal .card{width:min(460px,100%)}.modal input{width:100%;margin:7px 0 13px}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+    @media(max-width:760px){.wrap{margin:20px auto}.stats{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start}.tools>*{flex:1}.tools input{flex-basis:100%}}
+    .stats{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}.stat small{display:block;margin-top:5px;color:#927c6e}.test-data{margin-left:5px;background:#fff0d8;color:#b85d16}.dashboard-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:-8px 0 16px}.analysis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}.analysis-card h2,.questions-card h2,.detail-title{font-size:17px;margin:0 0 14px}.chart-empty{padding:26px 0;text-align:center;color:#927c6e}.bar-list{display:grid;gap:11px}.bar-row{display:grid;grid-template-columns:minmax(90px,1.15fr) minmax(120px,2fr) auto;align-items:center;gap:10px;font-size:13px}.bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar-track{height:10px;border-radius:999px;background:#f2e7db;overflow:hidden}.bar-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff9d57,var(--orange));min-width:2px}.bar-value{min-width:74px;text-align:right;color:#705c50}.timeline{display:flex;align-items:flex-end;gap:7px;height:150px;padding-top:16px;border-bottom:1px solid #eadbc9}.day-column{flex:1;min-width:12px;display:flex;height:100%;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.day-stack{width:min(22px,80%);display:flex;flex-direction:column;justify-content:flex-end;height:112px}.day-valid{background:#4eb28f}.day-invalid{background:#e98174}.day-label{font-size:9px;color:#8b7768;white-space:nowrap}.legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:#725f52}.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}.questions-card{margin-bottom:18px}.question-list{display:grid;gap:10px}.question-block{border:1px solid #eee1d4;border-radius:13px;padding:0 14px}.question-block summary{cursor:pointer;padding:14px 0;font-weight:700;list-style-position:inside}.question-block .bar-list{padding:0 0 16px}.section-note{font-size:12px;color:#8b7768;margin:-8px 0 14px}.detail-head{display:flex;justify-content:space-between;align-items:end;margin:20px 0 10px}.detail-title{margin:0}.metric-rate{color:var(--orange)}
+    @media(max-width:760px){.analysis-grid{grid-template-columns:1fr}.dashboard-meta{align-items:flex-start;flex-direction:column}.bar-row{grid-template-columns:minmax(76px,1fr) minmax(90px,1.5fr) auto}.day-label{display:none}.tools{display:grid;grid-template-columns:1fr 1fr}.tools>*{width:100%;min-width:0}.tools input,.tools #export{grid-column:1/-1}.top h1{font-size:23px}.top>div{min-width:0}.top button{flex:0 0 auto}}
+  </style>
+</head>
+<body>
+  <section class="card login" id="loginPanel">
+    <h1>问卷兑奖后台</h1>
+    <p class="muted">仅供现场工作人员和数据管理员使用</p>
+    <form id="loginForm">
+      <input id="password" type="password" autocomplete="current-password" placeholder="请输入后台密码" required>
+      <button class="primary" type="submit">登录</button>
+      <p class="error" id="loginError"></p>
+    </form>
+  </section>
+
+  <main class="wrap hidden" id="dashboard">
+    <header class="top">
+      <div><h1>moody 问卷数据与兑奖后台</h1><div class="muted">数据统计、质量监控、查码与核销</div></div>
+      <button id="logout">退出</button>
+    </header>
+    <section class="tools">
+      <input id="search" placeholder="输入兑换码或提交 ID">
+      <select id="status"><option value="">全部答卷</option><option value="valid">有效答卷</option><option value="invalid">异常答卷</option></select>
+      <select id="scope"><option value="all">全部数据</option><option value="formal">正式数据</option><option value="test">测试数据</option></select>
+      <select id="days"><option value="all">全部时间</option><option value="7">近 7 天</option><option value="30">近 30 天</option></select>
+      <button class="primary" id="query">查询</button>
+      <button id="refresh">刷新</button>
+      <button id="export">导出 CSV</button>
+    </section>
+    <div class="dashboard-meta"><span class="muted">统计口径：每次提交计一份答卷；有效率＝有效答卷÷全部答卷；核销率＝已核销兑换码÷已发兑换码。</span><span class="muted" id="freshness"></span></div>
+    <section class="stats" id="stats"></section>
+    <section class="analysis-grid">
+      <article class="card analysis-card"><h2>每日答卷趋势</h2><div id="timeline"></div></article>
+      <article class="card analysis-card"><h2>异常原因分布</h2><div id="reasons"></div></article>
+      <article class="card analysis-card"><h2>奖品规格分布</h2><div id="rewards"></div></article>
+      <article class="card analysis-card"><h2>度数分布</h2><div id="degrees"></div></article>
+    </section>
+    <section class="card questions-card"><h2>每道题选项占比</h2><p class="section-note">分母为回答该题的人数；多选题各选项占比相加可能超过 100%。</p><div class="question-list" id="questions"></div></section>
+    <div class="detail-head"><div><h2 class="detail-title">答卷明细与兑奖操作</h2><span class="muted">最多显示最近 100 条，搜索仅作用于下方明细。</span></div></div>
+    <section class="card table-card"><div class="scroll"><table>
+      <thead><tr><th>ID / 时间</th><th>答卷</th><th>奖品 / 度数</th><th>兑换码</th><th>兑奖状态</th><th>答题详情</th><th>操作</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table><div class="empty hidden" id="empty">暂时没有符合条件的数据</div></div></section>
+  </main>
+
+  <div class="modal hidden" id="redeemModal">
+    <form class="card" id="redeemForm">
+      <h2>确认核销</h2>
+      <p>兑换码：<span class="code" id="redeemCode"></span></p>
+      <label>工作人员姓名<input id="staffName" maxlength="100" required placeholder="便于后续追溯"></label>
+      <label>备注（选填）<input id="staffNote" maxlength="500" placeholder="例如：上海快闪店"></label>
+      <p class="error" id="redeemError"></p>
+      <div class="modal-actions"><button type="button" id="cancelRedeem">取消</button><button class="primary" type="submit">确认核销</button></div>
+    </form>
+  </div>
+
+  <script>
+    const $=s=>document.querySelector(s);let selectedCode='';
+    const reasonText={TOO_FAST:'少于 5 秒',STRAIGHT_LINE:'全部选择一致',INCOMPLETE:'答卷不完整'};
+    const statusText={valid:'有效',invalid:'异常',issued:'待兑奖',redeemed:'已核销',none:'未发码'};
+    const esc=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const time=value=>value?new Date(value).toLocaleString('zh-CN',{hour12:false}):'—';
+    const pct=value=>`${(Number(value||0)*100).toFixed(1)}%`;
+    async function api(url,options){const r=await fetch(url,options);const data=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(data.error||'操作失败'),{status:r.status,data});return data}
+    const emptyChart=message=>`<div class="chart-empty">${esc(message)}</div>`;
+    function renderBars(target,items,labelKey='label'){
+      $(target).innerHTML=items.length?`<div class="bar-list">${items.map(item=>`<div class="bar-row" title="${esc(item[labelKey])}: ${item.count}"><span class="bar-label">${esc(item[labelKey])}</span><span class="bar-track"><i class="bar-fill" style="width:${Math.max(1,item.share*100)}%"></i></span><span class="bar-value">${item.count} · ${pct(item.share)}</span></div>`).join('')}</div>`:emptyChart('当前范围暂无数据');
+    }
+    function renderAnalytics(data){
+      const s=data.summary;
+      const metrics=[
+        ['总答卷',s.total,'当前筛选范围'],['有效答卷',s.valid,'可用于分析'],['有效率',pct(s.validRate),'有效÷全部'],['异常答卷',s.invalid,'保留供质检'],
+        ['待兑奖',s.issued,'尚未核销'],['已核销',s.redeemed,`核销率 ${pct(s.redemptionRate)}`],['平均答题时长',`${s.averageDurationSeconds.toFixed(1)}秒`,'全部提交'],['重复参与拦截',s.blockedAttempts,`IP ${s.blockedIp} · 设备 ${s.blockedDevice}`]
+      ];
+      $('#stats').innerHTML=metrics.map(([label,value,note])=>`<div class="card stat"><span class="muted">${label}</span><b class="${label.includes('率')?'metric-rate':''}">${value}</b><small>${note}</small></div>`).join('');
+      $('#freshness').textContent=`数据更新：${time(data.generatedAt)}`;
+      const max=Math.max(1,...data.timeline.map(item=>item.total));
+      $('#timeline').innerHTML=data.timeline.length?`<div class="timeline">${data.timeline.map(item=>`<div class="day-column" title="${item.date}：共 ${item.total}，有效 ${item.valid}，异常 ${item.invalid}"><div class="day-stack"><i class="day-invalid" style="height:${item.invalid/max*100}%"></i><i class="day-valid" style="height:${item.valid/max*100}%"></i></div><span class="day-label">${item.date.slice(5)}</span></div>`).join('')}</div><div class="legend"><span><i style="background:#4eb28f"></i>有效</span><span><i style="background:#e98174"></i>异常</span></div>`:emptyChart('当前范围暂无答卷趋势');
+      renderBars('#reasons',data.reasons);
+      renderBars('#rewards',data.rewards.map(item=>({label:item.name,count:item.total,share:item.share})));
+      renderBars('#degrees',data.degrees);
+      $('#questions').innerHTML=data.questions.length?data.questions.map((question,index)=>`<details class="question-block" ${index<3?'open':''}><summary>${esc(question.question)} <span class="muted">（${question.respondents}人）</span></summary><div class="bar-list">${question.options.map(option=>`<div class="bar-row"><span class="bar-label" title="${esc(option.label)}">${esc(option.label)}</span><span class="bar-track"><i class="bar-fill" style="width:${Math.max(1,option.share*100)}%"></i></span><span class="bar-value">${option.count} · ${pct(option.share)}</span></div>`).join('')}</div></details>`).join(''):emptyChart('当前范围暂无可汇总的题目回答');
+    }
+    async function load(){
+      try{
+        const status=encodeURIComponent($('#status').value),scope=encodeURIComponent($('#scope').value),days=encodeURIComponent($('#days').value),search=encodeURIComponent($('#search').value);
+        const [analytics,rows]=await Promise.all([api(`/api/admin/analytics?status=${status}&scope=${scope}&days=${days}`),api(`/api/admin/submissions?status=${status}&scope=${scope}&days=${days}&search=${search}&limit=100`)]);
+        $('#loginPanel').classList.add('hidden');$('#dashboard').classList.remove('hidden');
+        renderAnalytics(analytics);
+        $('#empty').classList.toggle('hidden',rows.length>0);
+        $('#rows').innerHTML=rows.map(row=>`<tr>
+          <td><b>#${row.id}</b><br><span class="muted">${time(row.submittedAt)}</span><br><span class="muted">${(row.durationMs/1000).toFixed(1)} 秒</span></td>
+          <td><span class="pill ${row.status}">${statusText[row.status]}</span>${row.isTest?'<span class="pill test-data">测试</span>':''}${row.reasons.length?`<br><span class="muted">${row.reasons.map(x=>reasonText[x]||x).join('、')}</span>`:''}</td>
+          <td><b>${esc(row.prizeName||'—')}</b><br><span class="muted">${esc(row.degreeLabel||'')}</span></td>
+          <td class="code">${esc(row.rewardCode||'—')}</td>
+          <td><span class="pill ${row.rewardStatus}">${statusText[row.rewardStatus]}</span>${row.redeemedAt?`<br><span class="muted">${time(row.redeemedAt)}<br>${esc(row.redeemedBy||'')}</span>`:''}</td>
+          <td><details class="detail"><summary>查看 ${row.answerDetails.length} 项回答</summary><dl>${row.answerDetails.map(x=>`<dt>${esc(x.question)}</dt><dd>${esc([...x.answerLabels,x.otherText].filter(Boolean).join('、')||'—')}</dd>`).join('')}</dl></details></td>
+          <td>${row.rewardStatus==='issued'?`<button class="primary redeem-btn" data-code="${esc(row.rewardCode)}">核销</button>`:'—'}</td>
+        </tr>`).join('');
+        document.querySelectorAll('.redeem-btn').forEach(btn=>btn.onclick=()=>openRedeem(btn.dataset.code));
+      }catch(e){if(e.status===401){$('#dashboard').classList.add('hidden');$('#loginPanel').classList.remove('hidden')}else alert(e.message)}
+    }
+    function openRedeem(code){selectedCode=code;$('#redeemCode').textContent=code;$('#redeemError').textContent='';$('#redeemModal').classList.remove('hidden');$('#staffName').focus()}
+    $('#cancelRedeem').onclick=()=>$('#redeemModal').classList.add('hidden');
+    $('#loginForm').onsubmit=async e=>{e.preventDefault();$('#loginError').textContent='';try{await api('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:$('#password').value})});$('#password').value='';await load()}catch(err){$('#loginError').textContent=err.message}};
+    $('#redeemForm').onsubmit=async e=>{e.preventDefault();$('#redeemError').textContent='';try{await api(`/api/admin/rewards/${encodeURIComponent(selectedCode)}/redeem`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({staffName:$('#staffName').value,note:$('#staffNote').value})});$('#redeemModal').classList.add('hidden');$('#staffNote').value='';await load()}catch(err){$('#redeemError').textContent=err.message}};
+    $('#query').onclick=load;$('#refresh').onclick=load;$('#status').onchange=load;$('#scope').onchange=load;$('#days').onchange=load;$('#search').onkeydown=e=>{if(e.key==='Enter')load()};
+    $('#export').onclick=()=>location.href=`/api/admin/export.csv?status=${encodeURIComponent($('#status').value)}&scope=${encodeURIComponent($('#scope').value)}&days=${encodeURIComponent($('#days').value)}`;
+    $('#logout').onclick=async()=>{await api('/api/admin/logout',{method:'POST'});location.reload()};
+    load();
+  </script>
+</body>
+</html>

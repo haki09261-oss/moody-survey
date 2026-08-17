@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#fff0d7">
+  <title>moody 目怡蓝用户调研问卷</title>
+  <style>
+    @font-face{font-family:"Noto Sans SC Survey";src:url("assets/fonts/NotoSansSC-Regular-survey.woff2?v=20260813") format("woff2");font-style:normal;font-weight:400;font-display:swap}
+    @font-face{font-family:"Noto Sans SC Survey";src:url("assets/fonts/NotoSansSC-Medium-survey.woff2?v=20260813") format("woff2");font-style:normal;font-weight:500 600;font-display:swap}
+    @font-face{font-family:"Noto Sans SC Survey";src:url("assets/fonts/NotoSansSC-Bold-survey.woff2?v=20260813") format("woff2");font-style:normal;font-weight:700 800;font-display:swap}
+    @font-face{font-family:"Noto Sans SC Survey";src:url("assets/fonts/NotoSansSC-Black-survey.woff2?v=20260813") format("woff2");font-style:normal;font-weight:900;font-display:swap}
+    @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Light.otf") format("opentype");font-style:normal;font-weight:300;font-display:swap}
+    @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Book.otf") format("opentype");font-style:normal;font-weight:400;font-display:swap}
+    @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Medium.otf") format("opentype");font-style:normal;font-weight:500 600;font-display:swap}
+    @font-face{font-family:"Gotham Survey";src:url("assets/fonts/Gotham-Bold.otf") format("opentype");font-style:normal;font-weight:700 900;font-display:swap}
+    :root{--orange:#ff7928;--orange2:#ff9a4c;--ink:#4a2b1e;--cream:#fff4df;--paper:#fffdf8;--line:#f3c68e;--blue:#b8c9ff}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;color:var(--ink);background:#ffe8c5}
+    button,input,textarea,select{font:inherit}.app{width:min(100%,480px);min-height:100dvh;margin:auto;position:relative;overflow:hidden;background:radial-gradient(circle at 94% 7%,#ffd795 0 13%,transparent 14%),linear-gradient(160deg,#fff4de,#ffe5bb);padding:22px 14px calc(20px + env(safe-area-inset-bottom))}
+    .app:before,.app:after{content:"";position:absolute;z-index:0;width:150px;height:150px;border:14px solid rgba(255,134,48,.18);border-radius:50%}.app:before{top:-90px;right:-70px}.app:after{bottom:-110px;left:-70px}
+    .shell{position:relative;z-index:1;min-height:calc(100dvh - 42px);border:5px solid #ff9b4b;border-radius:30px 25px 34px 27px;background:rgba(255,253,247,.92);box-shadow:0 15px 30px #ec852b28, inset 0 0 0 2px #fff;padding:26px 16px 20px;display:flex;flex-direction:column}
+    .ring{position:absolute;right:23px;top:-42px;width:48px;height:83px;border:12px solid var(--orange);border-radius:50%;transform:rotate(9deg);filter:drop-shadow(0 5px 2px #d65d1740)}
+    .ring:after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#e86c22;bottom:-5px;left:3px;box-shadow:0 0 0 10px #ffc554}
+    .spark{position:absolute;color:#ffc342;font-size:25px;text-shadow:0 1px #e59a24}.s1{left:-13px;top:43%}.s2{right:10px;top:16%}.s3{right:8px;bottom:8%}
+    .progress{height:5px;background:#ffe2bc;border-radius:8px;overflow:hidden;margin-bottom:17px}.progress>i{display:block;height:100%;background:linear-gradient(90deg,#ffc557,#ff7724);border-radius:inherit;transition:width .3s}
+    .counter{text-align:center;font-weight:650;font-size:13px;letter-spacing:2px}.counter b{font-size:27px;color:var(--orange);padding:0 3px}.hero{display:grid;grid-template-columns:105px 1fr;align-items:center;margin:7px 0 15px}
+    .mascot{width:120px;height:112px;object-fit:cover;object-position:center;mix-blend-mode:multiply;border-radius:38%;transform:translateX(-8px)}
+    .question{min-height:132px;border:2px solid #f5c889;border-radius:44% 20px 44% 22px;padding:20px 15px 16px 26px;background:#fffaf1;display:flex;align-items:center;font-size:20px;line-height:1.58;font-weight:750;color:#ed7431;box-shadow:inset 0 0 18px #ffc66e17}
+    .hint{display:block;font-size:12px;color:#a8785b;font-weight:500;margin-top:4px}.options{display:grid;gap:9px;overflow:auto;overscroll-behavior:contain;padding:2px;flex:1}.option{display:flex;gap:12px;align-items:center;width:100%;min-height:55px;border:1px solid #f1dfc4;border-radius:11px;background:#fffdfa;padding:12px 15px;color:#583524;text-align:left;box-shadow:0 3px 10px #c5843920;transition:.18s}.option:active{transform:scale(.985)}
+    .mark{width:21px;height:21px;flex:none;border:2px solid #ff8a43;border-radius:6px;background:#fff}.single .mark{border-radius:50%}.option.on{border-color:#ff8a43;background:#fff1df;color:#db5e1c}.option.on .mark{box-shadow:inset 0 0 0 5px #fff;background:#ff7b2c}.option span:last-child{line-height:1.45;font-size:15px}
+    .other{width:100%;margin-top:8px;border:0;border-bottom:1px solid #efa75f;background:transparent;padding:7px;outline:0}.media-grid{display:grid;gap:9px;margin-bottom:12px}.media-grid.three{grid-template-columns:1fr}.product{width:100%;max-height:115px;object-fit:cover;border-radius:12px;border:1px solid #efdfc8;background:#fff}.media-grid.pack{grid-template-columns:1fr 1fr}.media-grid.pack .product{height:155px;max-height:none;object-fit:cover}
+    .select{width:100%;min-height:58px;padding:0 14px;border:2px solid #f2bd7c;border-radius:13px;background:#fffaf2;color:#6d432b;outline:0}.actions{display:grid;grid-template-columns:74px 1fr;gap:10px;margin-top:14px}.btn{border:0;border-radius:999px;min-height:50px;font-weight:750}.back{background:#fff0dc;color:#d66b2e}.next{color:white;background:linear-gradient(180deg,#ff963c,#ff6718);box-shadow:0 6px 0 #dd5614,0 11px 18px #ff792842}.next:disabled{filter:grayscale(.7);opacity:.45;box-shadow:none}.toast{position:fixed;left:50%;bottom:25px;transform:translate(-50%,20px);background:#4b2d21;color:#fff;padding:10px 16px;border-radius:30px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:8}.toast.show{opacity:1;transform:translate(-50%,0)}
+    .result{display:flex;flex-direction:column;align-items:center;text-align:center;min-height:calc(100dvh - 100px);font-family:"Noto Sans SC Survey",sans-serif}.brand{font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:28px;font-weight:900;margin-top:28px}.brand b{color:var(--orange)}.result-ip{width:210px;height:160px;object-fit:cover;object-position:center;border-radius:42%;mix-blend-mode:multiply;margin:-5px 0}.result-panel{width:100%;border:2px solid #f3c88c;background:#fffdfa;border-radius:28px;padding:26px 18px;box-shadow:0 8px 20px #e4893220}.badge{width:55px;height:55px;border-radius:50%;display:grid;place-items:center;margin:-55px auto 16px;background:#ffb94e;border:5px solid #fff1d8;color:#fff;font-size:33px;font-weight:900}.result h1{font-size:24px;color:#ed712d;margin:8px 0 18px}.result p{font-size:15px;line-height:1.8;margin:6px 0}.code{font-family:"Gotham Survey",sans-serif;font-size:25px;font-weight:900;color:#ff5b16;letter-spacing:2px;border:2px dashed #f1a55c;padding:15px 8px;border-radius:15px;margin:17px 0;user-select:all}.redeem{width:100%;margin-top:15px}.notes{margin-top:15px;text-align:left;border:1px solid #f3d6ad;border-radius:22px;padding:15px;background:#fff8ec}.notes b{font-size:17px}.notes li{font-size:12px;line-height:1.7;margin:6px 0}.fail h1{font-size:25px}.fail .result-ip{height:205px}
+    @media(max-height:700px){.shell{padding-top:20px}.hero{margin:2px 0 9px}.question{min-height:96px;font-size:17px}.mascot{height:90px}.option{min-height:47px;padding:9px 13px}.product{max-height:90px}}
+
+    /* 576 × 1024 像素级复刻层：参考图本身作为唯一视觉底稿 */
+    html,body{background:#ffeac8;overflow-x:hidden}
+    .app{width:min(100vw,576px);min-height:0;height:auto;aspect-ratio:9/16;margin:0 auto 78px;padding:0;overflow:visible;background:url('assets/reference-template-clean.png') center/100% 100% no-repeat}
+    .app:before,.app:after,.ring,.spark,.progress,.mascot{display:none!important}
+    .shell{position:absolute;inset:0;min-height:0;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0;display:block;overflow:visible}
+    .counter{position:absolute;z-index:3;top:11.35%;left:35%;width:31%;height:5.2%;display:flex;align-items:center;justify-content:center;background:transparent;color:#4a3023;font-size:clamp(11px,2.43vw,14px);font-weight:700;letter-spacing:1px;white-space:nowrap}
+    .counter b{font-size:clamp(24px,5.2vw,30px);color:#ff7731;padding:0 .16em;line-height:1}
+    .hero{display:block;margin:0}
+    .question{position:absolute;z-index:3;left:38.2%;top:18.8%;width:49.4%;height:16.8%;min-height:0;border:0;border-radius:32px;background:transparent;box-shadow:none;padding:3.2% 3% 2.2% 4.4%;display:flex;align-items:center;color:#ef7637;font-size:clamp(18px,4.5vw,26px);font-weight:800;line-height:1.62;text-align:left}
+    .question.long{font-size:clamp(15px,3.65vw,21px);line-height:1.48;padding-left:3.4%}
+    .hint{font-size:clamp(11px,2.25vw,13px);color:#ef7637;margin-top:3px;font-weight:650}
+    .options{position:absolute;z-index:4;left:13.55%;top:41.35%;width:79.15%;height:49.2%;display:flex;flex-direction:column;gap:1.78%;padding:0;overflow-y:auto;scrollbar-width:none}
+    .options::-webkit-scrollbar{display:none}
+    .options.many{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:10.92%;column-gap:2%;row-gap:1.78%;align-content:start}
+    .options.many .option{width:auto;height:auto;min-height:0;padding:0 6%;gap:5%}.options.many .option span:last-child{font-size:clamp(14px,2.9vw,17px);line-height:1.38;letter-spacing:.025em;word-spacing:.06em}.options.many .mark{width:clamp(16px,3.1vw,18px);height:clamp(18px,3.45vw,20px);border-radius:5px}
+    .option{width:100%;height:10.92%;min-height:10.92%;flex:none;margin:0;padding:0 3.8%;gap:3.1%;border:1px solid #f0d7b5;border-radius:10px;background:#fffaf2;box-shadow:0 3px 12px rgba(181,111,47,.08);color:#513225;text-align:left;transition:none}
+    .option:active{transform:none}.option span:last-child{font-size:clamp(15px,3.45vw,20px);line-height:1.44;font-weight:500;letter-spacing:.03em;word-spacing:.07em}
+    .mark{width:clamp(18px,3.65vw,21px);height:clamp(22px,4.45vw,26px);border:2px solid #f48643;border-radius:7px;background:#fffaf2}
+    .single .mark{border-radius:7px}.option.on{border-color:#f0c28d;background:#fff2df;color:#d95f23}.option.on .mark{background:#ff7b31;box-shadow:inset 0 0 0 5px #fff}
+    .placeholder{display:block;border-color:transparent;background:transparent;box-shadow:none;pointer-events:none;position:relative}.placeholder:after{display:none;content:none}
+    .other{height:5.47%;min-height:36px;margin:0;background:#fffaf2;padding:0 4%;border:1px solid #f0d7b5;border-radius:10px;color:#513225}
+    .media-grid{position:absolute;z-index:6;left:13.55%;top:39.4%;width:79.15%;height:18%;padding:10px;overflow:hidden;background:rgba(255,252,246,.97);border:1px solid #efc992;border-radius:16px;margin:0;box-shadow:0 8px 20px rgba(184,105,39,.14)}
+    .media-grid.three{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:48% 1fr;gap:8px;height:31.5%;overflow:hidden}.media-grid.three .product{width:100%;min-width:0;height:100%;max-height:none;object-fit:contain;background:#fff;border-radius:10px;box-shadow:0 2px 9px rgba(87,53,28,.1)}.media-grid.three .product:first-child{grid-column:1/3}
+    .media-grid.pack{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:31.5%;padding:10px}.media-grid.pack .product{width:100%;height:100%;max-height:none;object-fit:cover;border:2px solid #fff;border-radius:12px;box-shadow:0 3px 12px rgba(87,53,28,.16)}
+    .media-grid + .options{top:72.3%;height:12.5%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;overflow:visible}.media-grid + .options .option{width:auto;height:100%;min-height:0;border-radius:12px;background:rgba(255,250,242,.98);padding:8px 3px;gap:5px;flex-direction:column;justify-content:center;text-align:center}.media-grid + .options .option span:last-child{font-size:clamp(10px,2.2vw,13px);line-height:1.25}.media-grid + .options .mark{width:18px;height:18px;min-height:18px;border-radius:50%}
+    .media-grid.pack + .options{top:72.2%;height:18.2%;display:grid;grid-template-columns:1fr 1fr;gap:2%}.media-grid.pack + .options .option{height:100%;min-height:0;padding:0 8%;justify-content:center}.media-grid.pack + .options .option span:last-child{font-size:clamp(12px,2.8vw,16px)}
+    .visual-grid{position:absolute;z-index:7;left:13.55%;top:39.4%;width:79.15%;height:44.2%;display:grid;gap:10px}
+    .visual-choice{appearance:none;border:1px solid #efc992;background:rgba(255,252,246,.98);border-radius:15px;padding:8px;color:#513225;box-shadow:0 6px 16px rgba(154,88,33,.12);overflow:hidden;transition:.18s;position:relative}
+    .visual-choice:active{transform:scale(.985)}.visual-choice.on{border:3px solid #ff7c32;background:#fff3df;box-shadow:0 7px 20px rgba(255,115,39,.24)}.visual-choice.on:after{content:"✓";position:absolute;right:9px;top:9px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#ff7c32;color:#fff;font-size:18px;font-weight:900;box-shadow:0 2px 7px rgba(129,59,19,.25)}
+    .series-select{height:48%;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:8px}.series-select .visual-choice{display:flex;flex-direction:column;text-align:center;align-items:center;padding:6px}.series-select .visual-choice:last-child{grid-column:1/3;width:49.2%;justify-self:center}.series-select img{width:100%;height:68%;object-fit:contain;background:#fff;border-radius:9px}.series-select strong{margin-top:5px;font-size:clamp(11px,2.45vw,14px);line-height:1.2;color:#4e3024}.series-select span{margin-top:2px;font-size:clamp(9px,1.9vw,11px);color:#df7435}
+    .options.q7b1{display:none}
+    .pack-select{grid-template-columns:1fr 1fr;height:51%;gap:12px}.pack-select .visual-choice{display:flex;flex-direction:column;align-items:center;text-align:center;padding:9px}.pack-select img{width:100%;height:78%;object-fit:contain;object-position:center;border-radius:11px;background:#fff;padding:6px}.pack-select strong{font-size:clamp(13px,3vw,17px);margin-top:9px}.pack-select span{font-size:clamp(10px,2.2vw,12px);color:#df7435;margin-top:4px}.options.q16{display:none}
+    .shell.q16 .counter{top:11%;left:32.2%;width:35.6%;height:5.1%;border:1px solid #f2d6ae;border-radius:18px;background:rgba(255,253,248,.98);box-shadow:0 5px 13px rgba(167,92,32,.12);font-size:clamp(11px,2.25vw,13px)}.shell.q16 .counter b{font-size:clamp(25px,5vw,29px)}
+    .shell.q16 .question{top:18.9%;left:38%;width:49.5%;height:18.2%;font-size:clamp(20px,4.5vw,26px);line-height:1.55;padding-left:4.3%}
+    .shell.q16 .pack-select{top:41.25%;height:46.7%;gap:12px}.shell.q16 .pack-select .visual-choice{padding:12px 11px 11px;border-radius:18px;border-color:#efd5ae;background:rgba(255,253,249,.98);box-shadow:0 6px 17px rgba(154,88,33,.1)}
+    .shell.q16 .pack-select img{height:61.5%;padding:0;border-radius:14px;background:#fff;object-fit:contain}.shell.q16 .pack-select strong{width:100%;margin-top:9px;padding-top:18px;border-top:3px dotted #f1c88f;font-size:clamp(16px,3.7vw,21px);color:#4e3024}.shell.q16 .pack-select span{width:90%;min-height:43px;margin-top:13px;border:1.5px solid #ff7830;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:clamp(13px,2.9vw,17px);color:#f16525}.shell.q16 .pack-select span:before{content:"";width:24px;height:24px;border:1.5px solid #ff7830;border-radius:50%;background:#fff}.shell.q16 .pack-select .visual-choice.on span{background:#fff0dc}.shell.q16 .pack-select .visual-choice.on span:before{background:#ff7830;box-shadow:inset 0 0 0 6px #fff}
+    .app:has(.shell.q7b1){aspect-ratio:874/1800;margin-bottom:78px}
+    .shell.q7b1 .counter{top:7.5%;left:34.5%;width:31%;height:4.3%;border:1px solid #f2d6ae;border-radius:18px;background:rgba(255,253,248,.98);box-shadow:0 5px 13px rgba(167,92,32,.12)}
+    .shell.q7b1 .question{top:13.2%;left:36%;width:50.5%;height:15.4%;font-size:clamp(21px,4.7vw,27px);line-height:1.5;padding-left:5%}
+    .shell.q7b1 .series-select{top:31%;left:8%;width:84%;height:56.5%;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(5,minmax(0,1fr));gap:8px}
+    .shell.q7b1 .series-select .visual-choice,.shell.q7b1 .series-select .visual-choice:last-child{width:100%;height:auto;display:grid;grid-column:auto;grid-template-columns:42% 1fr 22%;grid-template-rows:1fr 1fr;column-gap:12px;padding:10px 12px;text-align:left;border-radius:17px}
+    .shell.q7b1 .series-select img{grid-column:1;grid-row:1/3;width:100%;height:100%;object-fit:contain;border-radius:11px}
+    .shell.q7b1 .series-select strong{grid-column:2;grid-row:1;align-self:end;margin:0;font-size:clamp(14px,3.15vw,18px);line-height:1.25}
+    .shell.q7b1 .series-select em{grid-column:2;grid-row:2;align-self:start;margin-top:7px;font-style:normal;font-size:clamp(10px,2.25vw,13px);color:#cf7040;white-space:nowrap}
+    .shell.q7b1 .series-select em:before{content:"✓";display:inline-grid;place-items:center;width:15px;height:15px;margin-right:6px;border-radius:50%;background:#ffab68;color:#fff;font-size:10px}
+    .shell.q7b1 .series-select span{grid-column:3;grid-row:1/3;align-self:center;justify-self:center;display:flex;flex-direction:column;align-items:center;gap:8px;margin:0;font-size:clamp(10px,2.35vw,14px);color:#f26525;white-space:nowrap}
+    .shell.q7b1 .series-select span:before{content:"";width:34px;height:34px;border:1.5px solid #ff7430;border-radius:50%;background:#fff}.shell.q7b1 .series-select .visual-choice.on span:before{background:#ff7430;box-shadow:inset 0 0 0 8px #fff}
+    .app:has(.shell.q7b1){aspect-ratio:873/1800;background:url('assets/q7-exact-reference.png') center/100% 100% no-repeat}
+    .shell.q7b1 .counter,.shell.q7b1 .question{display:none}
+    .shell.q7b1 .series-select{top:30.75%;left:8.15%;width:83.7%;height:56.45%;grid-template-rows:repeat(5,minmax(0,1fr));gap:.72%;pointer-events:auto}
+    .shell.q7b1 .series-select .visual-choice,.shell.q7b1 .series-select .visual-choice:last-child{position:relative;display:block;width:100%;height:auto;padding:0;border:0;border-radius:20px;background:transparent;box-shadow:none;color:transparent}
+    .shell.q7b1 .series-select .visual-choice img,.shell.q7b1 .series-select .visual-choice strong,.shell.q7b1 .series-select .visual-choice em,.shell.q7b1 .series-select .visual-choice span{visibility:hidden}
+    .shell.q7b1 .series-select .visual-choice.on{border:3px solid rgba(255,116,48,.42);background:rgba(255,240,219,.16);box-shadow:0 5px 16px rgba(174,86,26,.12)}
+    .shell.q7b1 .series-select .visual-choice.on:after{content:"✓";visibility:visible;position:absolute;right:6.15%;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#ff7430;color:#fff;font-size:24px;font-weight:900;box-shadow:0 0 0 7px #fff,0 0 0 9px #ff7430}
+    /* Question 7: clean reference artwork with live Noto Sans SC / Gotham copy. */
+    .app:has(.shell.q7b1){background-image:url("assets/q7-font-clean-background.png?v=2")}
+    .shell.q7b1 .counter{display:flex;top:7.75%;left:34.5%;width:31%;height:3.95%;border:0;border-radius:0;background:transparent;box-shadow:none;color:#4a3023;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(11px,2.55vw,15px);font-weight:700}
+    .shell.q7b1 .counter b{font-size:clamp(23px,5.2vw,31px);font-weight:700;color:#f15c25}
+    .shell.q7b1 .question{display:flex;top:13.25%;left:36.3%;width:48.5%;height:15.15%;padding:1.3% 4.3%;align-items:center;border:0;border-radius:0;background:transparent;box-shadow:none;color:#f15c25;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(20px,4.65vw,27px);font-weight:700;line-height:1.5}
+    .shell.q7b1 .question .hint{margin-top:.62em;padding:.32em .72em;border-radius:999px;background:#fff0df;color:#f15c25;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(10px,2.25vw,13px);font-weight:500;width:max-content}
+    .shell.q7b1 .series-select .visual-choice,.shell.q7b1 .series-select .visual-choice:last-child{display:grid;grid-template-columns:42% 1fr 22%;grid-template-rows:1fr 1fr;column-gap:12px;padding:10px 12px;color:#4b2d20;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif}
+    .shell.q7b1 .series-select .visual-choice img{visibility:hidden}
+    .shell.q7b1 .series-select .visual-choice strong{visibility:visible;grid-column:2;grid-row:1;align-self:end;margin:0;color:#4b2d20;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(14px,3.15vw,18px);font-weight:700;line-height:1.25}
+    .shell.q7b1 .series-select .visual-choice em{visibility:visible;grid-column:2;grid-row:2;align-self:start;margin-top:7px;color:#cf7040;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(10px,2.25vw,13px);font-style:normal;font-weight:400;white-space:nowrap}
+    .shell.q7b1 .series-select .visual-choice em:before{content:"✓";display:inline-grid;place-items:center;width:15px;height:15px;margin-right:6px;border-radius:50%;background:#ffab68;color:#fff;font-family:"Gotham Survey",sans-serif;font-size:10px}
+    .shell.q7b1 .series-select .visual-choice span{visibility:visible;grid-column:3;grid-row:1/3;align-self:center;justify-self:center;display:flex;flex-direction:column;align-items:center;gap:8px;margin:0;color:#f26525;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(10px,2.35vw,14px);font-weight:500;white-space:nowrap}
+    .shell.q7b1 .series-select .visual-choice span:before{content:"";width:clamp(24px,5.9vw,34px);height:clamp(24px,5.9vw,34px);border:1.5px solid #ff7430;border-radius:50%;background:#fff}
+    .shell.q7b1 .series-select .visual-choice.on:after{display:none}
+    .shell.q7b1 .series-select .visual-choice.on span:before{background:#ff7430;box-shadow:inset 0 0 0 clamp(5px,1.35vw,8px) #fff}
+    .app:has(.shell.q15){aspect-ratio:841/1870;margin-bottom:0;background:url('assets/q15-exact-reference.png') center/100% 100% no-repeat}
+    .shell.q15 .counter,.shell.q15 .question,.shell.q15 .media-grid{display:none}
+    .shell.q15 .options{position:absolute;z-index:8;left:7.15%;top:78.55%;width:86.75%;height:7.9%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1.25%;overflow:visible;padding:0}
+    .shell.q15 .options .option{position:relative;display:block;width:auto;height:100%;min-height:0;padding:0;border:0;border-radius:18px;background:transparent;box-shadow:none;color:transparent}
+    .shell.q15 .options .option .mark,.shell.q15 .options .option span{visibility:hidden}
+    .shell.q15 .options .option:nth-child(3):before{content:"";position:absolute;left:50%;top:37%;transform:translate(-50%,-50%);width:13px;height:13px;border:0;border-radius:50%;background:#fffaf2}
+    .shell.q15 .options .option.on:after{content:"";position:absolute;left:50%;top:37%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#ff7128;box-shadow:none}
+    .shell.q15 .actions{position:absolute;z-index:9;left:11.8%;top:94.25%;width:76.4%;height:4.8%;margin:0;display:grid;grid-template-columns:32% 1fr;gap:3%}
+    .shell.q15 .actions .btn{width:100%;height:100%;min-height:0;border:0;background:transparent!important;box-shadow:none!important;color:transparent!important;opacity:1}
+    /* Question 14: keep the reference artwork, but render every interface label with the supplied fonts. */
+    .app:has(.shell.q15){background-image:url("assets/q15-font-clean-background.png")}
+    .shell.q15 .counter{display:flex;top:8.35%;left:34%;width:32%;height:3.4%;font-size:clamp(11px,2.7vw,16px);font-weight:700;letter-spacing:.04em;color:#4a3023}
+    .shell.q15 .counter b{font-size:clamp(22px,5.4vw,32px);font-weight:700;color:#f15c25;padding:0 .12em}
+    .shell.q15 .question{display:flex;left:41.4%;top:16.2%;width:43.2%;height:12.8%;padding:0;align-items:center;border:0;border-radius:0;background:transparent;box-shadow:none;color:#f15c25;font-size:clamp(14px,3.35vw,20px);font-weight:700;line-height:1.7}
+    .shell.q15 .question .hint{display:block;margin-top:.5em;color:#f15c25;font-size:clamp(11px,2.45vw,14px);font-weight:500}
+    .shell.q15 .media-grid{display:none}
+    .shell.q15 .ring,.shell.q15 .spark{display:block;position:absolute;z-index:6;width:24%;height:auto;color:#4b2d20;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-style:normal;font-size:0;line-height:1.55;pointer-events:none}
+    .shell.q15 .ring{left:69.3%;top:36.85%;border:0}
+    .shell.q15 .ring:before,.shell.q15 .spark.s1:before,.shell.q15 .spark.s2:before{content:"moody + ";font-family:"Gotham Survey",sans-serif;font-size:clamp(12px,2.85vw,17px);font-weight:700}
+    .shell.q15 .ring:after{content:"目怡蓝\A M日抛";white-space:pre;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(12px,2.85vw,17px);font-weight:700}
+    .shell.q15 .spark.s1{left:69.3%;top:51.75%}
+    .shell.q15 .spark.s1:after{content:"目怡蓝\A 薄润日抛";white-space:pre;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(12px,2.85vw,17px);font-weight:700}
+    .shell.q15 .spark.s2{left:69.3%;top:66.85%}
+    .shell.q15 .spark.s2:after{content:"目怡蓝\A S日抛";white-space:pre;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(12px,2.85vw,17px);font-weight:700}
+    .shell.q15 .spark.s3{display:none}
+    .shell.q15 .ring,.shell.q15 .spark.s1,.shell.q15 .spark.s2{display:none}
+    .shell.q15 .q15-live-copy{position:absolute;inset:0;z-index:7;pointer-events:none;color:#4b2d20}
+    .shell.q15 .q15-product-name{position:absolute;left:69.3%;width:25%;font-size:clamp(12px,2.85vw,17px);font-weight:700;line-height:1.55}
+    .shell.q15 .q15-product-name:nth-child(1){top:36.85%}
+    .shell.q15 .q15-product-name:nth-child(2){top:51.75%}
+    .shell.q15 .q15-product-name:nth-child(3){top:66.85%}
+    .shell.q15 .q15-product-name .line-one{display:flex;align-items:baseline;white-space:nowrap}
+    .shell.q15 .q15-product-name .latin{font-family:"Gotham Survey",sans-serif}
+    .shell.q15 .q15-product-name .zh,.shell.q15 .q15-product-name .line-two{font-family:"Noto Sans SC Survey",sans-serif}
+    .shell.q15 .q15-product-name .line-two{display:block;margin-top:.18em}
+    .shell.q15 .q15-product-name:after{content:"";display:block;width:1.5em;height:2px;margin-top:.62em;background:#f15c25;border-radius:2px}
+    .shell.q15 .options .option{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:21%;color:#4b2d20;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif}
+    .shell.q15 .options .option .mark{visibility:hidden;display:none}
+    .shell.q15 .options .option span{visibility:visible;margin-top:34%;font-size:clamp(10px,2.35vw,14px);font-weight:500;line-height:1.2;white-space:nowrap;color:#4b2d20}
+    .shell.q15 .options .option:before,.shell.q15 .options .option:nth-child(3):before{content:"";position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);width:clamp(13px,3.35vw,20px);height:clamp(13px,3.35vw,20px);border:1.5px solid #ff7128;border-radius:50%;background:#fffaf2}
+    .shell.q15 .options .option.on:after{left:50%;top:36%;width:clamp(6px,1.5vw,9px);height:clamp(6px,1.5vw,9px);background:#ff7128;box-shadow:none}
+    .shell.q15 .options .option.on span{color:#f15c25}
+    .shell.q15 .actions .btn{display:flex;align-items:center;justify-content:center;color:#c86733!important;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(13px,3.25vw,19px);font-weight:500}
+    .shell.q15 .actions .next{color:#fff!important}
+    .select{position:absolute;z-index:5;left:13.55%;top:41.35%;width:79.15%;height:5.7%;min-height:0;border:1px solid #f0d7b5;border-radius:10px;background:#fffaf2;color:#513225;padding:0 4%}
+    .actions{position:absolute;z-index:7;top:100%;left:13.55%;width:79.15%;height:58px;margin:12px 0 0;display:grid;grid-template-columns:30% 1fr;gap:10px}
+    .btn{min-height:48px}.back{background:#fff7ea;border:1px solid #efcf9f;color:#c36a31}.next{background:#ff7b2c;box-shadow:0 5px 0 #dd5b19;color:#fff}.next:disabled{opacity:.38}
+    /* 统一使用新版问卷底图；所有文字与交互控件继续由 HTML 实时渲染。 */
+    .app,
+    .app:has(.shell.q7b1),
+    .app:has(.shell.q15),
+    .app:has(.shell.q16),
+    .app:has(.shell.degree){width:min(100vw,576px);aspect-ratio:426/923;margin:0 auto!important;background:url("assets/universal-survey-background.png") center/100% 100% no-repeat!important}
+    .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{left:33%;top:14.2%;width:34%;height:3.2%;display:flex;align-items:center;justify-content:center;background:transparent!important;box-shadow:none!important;border:0!important}
+    .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{left:36.2%;top:19.2%;width:51.5%;height:17.2%;padding:3.5% 4.5% 2.5%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:transparent!important;border:0!important;box-shadow:none!important;transform:none!important;font-size:clamp(18px,4.1vw,24px)!important;line-height:1.48!important;font-weight:700!important}
+    .shell .question h2,.shell.q7b1 .question h2,.shell.q15 .question h2,.shell.q16 .question h2,.shell.degree .question h2{font-size:clamp(17px,4.25vw,25px);line-height:1.48;margin:0;color:#f15c25}
+    .shell .options{left:7%;top:38.8%;width:86%;height:47%;gap:1.2%;overflow-y:auto;overflow-x:hidden}
+    /* 八个选项时压缩到礼物装饰上方，避免最后一项越出白色内容框。 */
+    .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))){height:45%;gap:1%}
+    .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))) .option{height:auto;min-height:0;flex:1 1 0;padding-top:0;padding-bottom:0}
+    .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))) .option span:last-child{font-size:clamp(15px,3.2vw,19px);line-height:1.34;letter-spacing:.015em}
+    /* 分支题数量不同，但问卷设计统一按完整流程显示为 17 题。 */
+    .shell .counter b:last-of-type{font-size:0!important}
+    .shell .counter b:last-of-type:after{content:"17";font-size:clamp(24px,5.2vw,30px)}
+    .shell .actions,.shell.q15 .actions,.shell.degree .actions{position:absolute;z-index:12;left:11.75%;top:92.15%;width:78.35%;height:5.2%;margin:0;display:grid;grid-template-columns:33.1% 63.6%;gap:3.3%}
+    .shell .actions .btn,.shell.q15 .actions .btn,.shell.degree .actions .btn{height:100%;min-height:0;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center;line-height:1!important;transform:translateY(-24%)!important;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(14px,3.7vw,22px);font-weight:600}
+    .shell .actions .back,.shell.q15 .actions .back,.shell.degree .actions .back{color:#bf622b!important}
+    .shell .actions .next,.shell.q15 .actions .next,.shell.degree .actions .next{color:#fff!important}
+    .shell.q7b1 .series-select{left:6.8%;top:38.5%;width:86.4%;height:47.5%;display:grid;grid-template-rows:none;grid-auto-rows:31%;gap:3.5%;padding:.8% .8% 2%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(235,151,81,.48) transparent}
+    .shell.q7b1 .series-select::-webkit-scrollbar{width:4px}
+    .shell.q7b1 .series-select::-webkit-scrollbar-track{background:transparent}
+    .shell.q7b1 .series-select::-webkit-scrollbar-thumb{border-radius:999px;background:rgba(235,151,81,.48)}
+    .shell.q7b1 .series-card{min-height:0}
+    /* 第七题仅展示产品图、产品名称与选择圆圈。 */
+    .shell.q7b1 .series-select .visual-choice,
+    .shell.q7b1 .series-select .visual-choice:last-child{height:100%!important;min-width:0;min-height:0;overflow:hidden;grid-template-columns:44% 1fr 18%;grid-template-rows:minmax(0,1fr);column-gap:3%;padding:2.5% 2.8%;align-items:center;border:1px solid #f0d6b2!important;border-radius:15px!important;background:rgba(255,253,249,.96)!important;box-shadow:0 5px 13px rgba(157,91,38,.1)!important}
+    .shell.q7b1 .series-select img{grid-column:1;grid-row:1;width:100%;height:100%;min-width:0;min-height:0;max-height:100%;padding:0;display:block;align-self:center;visibility:visible!important;object-fit:contain;object-position:center;background:transparent;border-radius:8px}
+    .shell.q7b1 .series-select .visual-choice strong{grid-column:2;grid-row:1;align-self:center!important;justify-self:start;margin:0!important;font-size:clamp(14px,3.5vw,20px);line-height:1.35;text-align:left}
+    .shell.q7b1 .series-select em,
+    .shell.q7b1 .series-select span{display:none!important}
+    .shell.q7b1 .series-select .visual-choice:after{content:none!important;display:none!important}
+    .shell.q7b1 .series-select .visual-choice:before{content:"";grid-column:3;grid-row:1;justify-self:center;width:clamp(25px,7vw,40px);height:clamp(25px,7vw,40px);border:1.5px solid #ff7430;border-radius:50%;background:#fff;box-sizing:border-box}
+    .shell.q7b1 .series-select .visual-choice.on:before{background:#ff7430;box-shadow:inset 0 0 0 clamp(6px,1.7vw,9px) #fff}
+    .shell .counter b:last-of-type{font-size:clamp(24px,5.2vw,30px)!important}
+    .shell .counter b:last-of-type:after{content:none!important;display:none!important}
+    /* 普通题统一增加选项间距；超出内容框时仅滚动选项层。 */
+    .shell .options:not(.q7b1):not(.q15):not(.q16){gap:clamp(9px,2.2%,14px)!important;padding:.8% .6% 2%;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(235,151,81,.48) transparent}
+    .shell .options:not(.q7b1):not(.q15):not(.q16)::-webkit-scrollbar{width:4px}
+    .shell .options:not(.q7b1):not(.q15):not(.q16)::-webkit-scrollbar-track{background:transparent}
+    .shell .options:not(.q7b1):not(.q15):not(.q16)::-webkit-scrollbar-thumb{border-radius:999px;background:rgba(235,151,81,.48)}
+    .shell .options:not(.q7b1):not(.q15):not(.q16) > .option:not(.placeholder){height:auto!important;min-height:clamp(58px,7.2vw,72px)!important;flex:0 0 auto!important;padding-top:8px;padding-bottom:8px}
+    .shell .options:not(.q7b1):not(.q15):not(.q16) > .placeholder{display:none!important}
+    .shell .options:not(.q7b1):not(.q15):not(.q16) > .other-field{position:relative;display:block;height:auto;min-height:60px;flex:0 0 auto;margin-bottom:2%}
+    .other-field .other{width:100%;height:56px;min-height:56px;margin:0;padding:8px 58px 8px 14px;border:1.5px solid #ff9a5c;border-radius:12px;background:#fffdf9;color:#513225;font-family:"Noto Sans SC Survey",sans-serif;font-size:clamp(14px,3.2vw,18px);box-shadow:0 4px 12px rgba(157,91,38,.08);outline:0}
+    .other-field .other:focus{border-color:#ff6f26;box-shadow:0 0 0 3px rgba(255,111,38,.14)}
+    .other-count{position:absolute;right:12px;bottom:9px;color:#a8785b;font-size:11px;line-height:1;pointer-events:none}
+    /* 保留带产品图片的横向评价控件原有布局。 */
+    .shell .media-grid + .options{padding:0;overflow:visible!important;gap:6px!important;scrollbar-width:none}
+    .shell .media-grid + .options > .option{height:100%!important;min-height:0!important;flex:1 1 auto!important;padding:8px 3px}
+    .shell .media-grid.pack + .options{gap:2%!important}
+    .shell .media-grid.pack + .options > .option{height:100%!important;min-height:0!important;padding:0 8%}
+    .shell.q15 .media-grid{display:grid;position:absolute;z-index:6;left:9%;top:39%;width:82%;height:34%;grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(0,1fr));gap:2%;padding:1.5%;border:1px solid #f1d6b4;border-radius:16px;background:rgba(255,253,249,.9)}
+    .shell.q15 .media-grid.three .product,.shell.q15 .media-grid.three .product:first-child{grid-column:auto;width:100%;height:100%;max-height:none;object-fit:contain;border:0;background:#fff}
+    .shell.q15 .q15-product-names{display:none}
+    .shell.q15 .options{left:7.2%;top:75%;width:85.6%;height:10%;display:grid;grid-template-columns:repeat(5,1fr);gap:1.2%}
+    .shell.q15 .options .option{height:100%;padding:0;display:flex;align-items:center;justify-content:flex-start;border:1px solid #f1d6b4;border-radius:10px;background:rgba(255,253,249,.9)}
+    .shell.q15 .options .option:before,.shell.q15 .options .option:nth-child(3):before{top:30%;width:clamp(13px,3.35vw,20px);height:clamp(13px,3.35vw,20px)}
+    .shell.q15 .options .option.on:after{top:30%}
+    .shell.q15 .options .option span{margin-top:50%;font-size:clamp(9px,2.1vw,13px);white-space:normal;text-align:center;line-height:1.3}
+    .shell.degree .options{left:15%;top:49%;width:70%;height:16%;padding:3%;border:1px solid #f1d6b4;border-radius:18px;background:rgba(255,253,249,.92);box-shadow:0 8px 18px rgba(170,91,25,.12)}
+    .shell.degree .options:before{content:"✦  请选择度数";position:absolute;left:0;top:12%;width:100%;text-align:center;color:#583425;font-size:clamp(16px,4vw,23px);font-weight:700}
+    .shell.degree .select{left:8%;top:45%;width:84%;height:38%;border:1.5px solid #ff7128;border-radius:16px;background:#fff;color:#513225;box-shadow:0 5px 12px rgba(180,95,30,.12)}
+    .result{position:absolute;inset:0;background:#fff0d7;padding:20px;overflow:auto}.toast{z-index:20}
+    .result .notes ol{counter-reset:result-step;margin-left:0;padding-left:0}
+    .result .notes li{list-style:none;counter-increment:result-step;padding-left:2em;position:relative}
+    .result .notes li:first-child{display:none}
+    .result .notes li::before{content:counter(result-step);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border-radius:50%;display:grid;place-items:center;background:#ff7b2c;color:#fff;font-family:"Gotham Survey",sans-serif;font-weight:700;line-height:1}
+    /* 手机端始终以 Safari/微信当前可视高度铺满，避免底部按钮落到浏览器工具栏下面。 */
+    @media(max-width:768px){
+      html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
+      .app,
+      .app:has(.shell.q7b1),
+      .app:has(.shell.q15),
+      .app:has(.shell.q16),
+      .app:has(.shell.degree){width:min(100vw,calc(100dvh * 426 / 828));max-width:none;height:100dvh;min-height:0;aspect-ratio:auto;margin:0 auto!important;background-size:100% auto!important;background-position:center bottom!important;background-repeat:no-repeat!important}
+      .shell .counter,.shell.q7b1 .counter,.shell.q15 .counter,.shell.q16 .counter,.shell.degree .counter{top:4.3%;height:3.6%}
+      .shell .question,.shell .question.long,.shell.q7b1 .question,.shell.q15 .question,.shell.q16 .question,.shell.degree .question{top:9.9%;height:19.2%}
+      .shell .options{top:31.8%;height:52.4%}
+      .shell .options:has(> .option:nth-child(8)):not(:has(> .option:nth-child(9))){height:52.4%}
+      /* 第 12 题：双列选项使用独立行高，避免手机端卡片彼此贴合。 */
+      .shell.q13 .options.many{grid-auto-rows:minmax(68px,auto);row-gap:16px!important;column-gap:2%!important;align-content:start;padding:2px 2px 14px!important;overflow-y:auto!important}
+      .shell.q13 .options.many > .option{height:68px!important;min-height:68px!important}
+      /* 品牌选择页：15 个双列选项保持舒适间距，超出区域独立滚动。 */
+      .shell.q8b3 .options.many{grid-auto-rows:minmax(68px,auto);row-gap:16px!important;column-gap:2%!important;align-content:start;padding:2px 2px 14px!important;overflow-y:auto!important}
+      .shell.q8b3 .options.many > .option{height:68px!important;min-height:68px!important}
+      /* “除 moody 外购买品牌”页：只调整本页的双列间距和滚动边界。 */
+      .shell.q9b1 .options.many{grid-auto-rows:minmax(68px,auto);row-gap:16px!important;column-gap:2%!important;align-content:start;padding:2px 2px 14px!important;overflow-y:auto!important}
+      .shell.q9b1 .options.many > .option{height:68px!important;min-height:68px!important}
+      .shell.q7b1 .series-select{top:31.9%;height:52.2%;grid-auto-rows:31%;gap:3.5%;padding-bottom:2%}
+      .shell.q15 .media-grid{top:32.4%;height:37.9%}
+      .shell.q15 .options{top:72.1%;height:11.2%}
+      .shell.degree .options{top:43.1%;height:17.8%}
+      .shell .actions,.shell.q15 .actions,.shell.degree .actions{top:91.2%;height:5.8%}
+    }
+    /* 新兑奖页：以无字品牌插画为底图，所有可读内容使用项目内品牌字体。 */
+    .app:has(.reward-v2){width:min(100vw,576px);height:auto;min-height:0;aspect-ratio:852/1847;margin:0 auto!important;padding:0;background:none!important;overflow:hidden}
+    .shell.reward-shell{position:absolute;inset:0;overflow:hidden;background:transparent}
+    .reward-v2{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:url("assets/reward-page-clean.png") center/100% 100% no-repeat;color:#4b2c1d;font-family:"Noto Sans SC Survey",sans-serif;text-align:center}
+    .reward-title{position:absolute;z-index:2;left:38%;top:19.2%;width:53%;font-size:clamp(22px,5.25vw,30px);font-weight:800;line-height:1.38;letter-spacing:.02em;white-space:nowrap}
+    .reward-title .title-line{display:flex;align-items:center;justify-content:center;gap:.12em}
+    .reward-title .moody-logo{display:block;width:48%;height:auto;flex:none;object-fit:contain;transform:none}
+    .reward-title em{font-style:normal;color:#f35e16;margin-right:.16em}
+    .reward-copy{position:absolute;z-index:2;left:18%;top:36.9%;width:66%;font-size:clamp(13px,3.1vw,17px);font-weight:600;line-height:1.55;letter-spacing:.015em}
+    .reward-code{position:absolute;z-index:2;left:15.8%;top:45.4%;width:68.4%;height:7.1%;display:flex;align-items:center;justify-content:center;font-family:"Gotham Survey",sans-serif;font-size:clamp(22px,6vw,35px);font-weight:900;color:#f75c15;letter-spacing:.035em;user-select:all}
+    .reward-redeem{position:absolute;z-index:3;left:12.6%;top:56.25%;width:74.8%;height:5.55%;border:0;border-radius:999px;background:transparent;color:#fff;font-family:"Gotham Survey","Noto Sans SC Survey",sans-serif;font-size:clamp(14px,3.7vw,22px);font-weight:600;line-height:1;letter-spacing:.02em;cursor:pointer;padding:0}
+    .reward-redeem-label{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);display:inline-grid;grid-template-columns:auto auto;align-items:center;justify-content:center;gap:.35em;width:max-content;margin:0;white-space:nowrap}
+    .reward-instructions{position:absolute;z-index:2;left:14.4%;top:63.75%;width:71.2%;text-align:left}
+    .reward-instructions h2{margin:0 0 5.3%;padding-left:8.6%;font-size:clamp(16px,4vw,23px);font-weight:800;line-height:1.25}
+    .reward-notes-star{position:absolute;left:.2%;top:.05%;width:6.2%;height:auto;display:block;object-fit:contain;mix-blend-mode:multiply}
+    .reward-instructions ol{list-style:none;counter-reset:reward-step;margin:0;padding:0}
+    .reward-instructions li{counter-increment:reward-step;position:relative;box-sizing:border-box;width:100%;margin:0 0 4.1%;padding:0 1% 0 8.6%;font-size:clamp(10.5px,2.55vw,14px);font-weight:500;line-height:1.4;letter-spacing:0;white-space:nowrap}
+    .reward-instructions li>span{display:block;transform:translateY(7px);white-space:nowrap}
+    .reward-instructions li::before{content:counter(reward-step);position:absolute;left:1%;top:calc(50% + 4px);transform:translateY(-50%);box-sizing:border-box;width:5.7%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:4px 0 0;color:#fff;font-family:"Gotham Survey",sans-serif;font-size:clamp(10.5px,2.55vw,14px);font-weight:700;line-height:1}
+    .reward-instructions li:nth-child(3)>span{transform:translateY(9px)}
+    .reward-instructions li:nth-child(3)::before{transform:translateY(calc(-50% + 2px))}
+    @media(max-width:768px){
+      .app:has(.reward-v2){width:min(100vw,576px);height:100dvh;aspect-ratio:auto;margin:0 auto!important}
+      .shell.reward-shell{inset:0}
+      .reward-v2{
+        top:min(0px,calc(100dvh - (min(100vw,576px) * 1847 / 852) + 3.1vw));
+        bottom:auto;
+        height:calc(min(100vw,576px) * 1847 / 852)
+      }
+    }
+  </style>
+</head>
+<body><main class="app"><section class="shell" id="screen"><div class="ring"></div><i class="spark s1">★</i><i class="spark s2">✦</i><i class="spark s3">★</i></section></main><div class="toast" id="toast"></div>
+<script>
+const A='';
+const degreeValues=[100,125,150,175,200,225,250,275,300,325,350,375,400,425,450,475,500,525,550,575,600,650,700,750,800,850,900,950,1000];
+const degree=degreeValues.map(value=>`${value}度`);
+const qs=[
+ {id:'q1',t:'你通常会在什么时候戴美瞳？',m:1,o:['日常上班/上学','逛街/聚会/约会','运动/健身/户外','旅行/拍照','不想戴框架镜的时候几乎都会戴美瞳']},
+ {id:'q2',t:'你戴美瞳时，最常遇到哪些不适？',m:1,max:3,o:['戴久了干涩','有异物感/磨眼','眼睛容易有红血丝','视物模糊','久看屏幕后眼睛酸胀','镜片容易滑片','基本没有不适']},
+ {id:'q3',t:'你平时戴美瞳和透明片的情况是？',o:['只戴美瞳','两种都戴，戴美瞳更多','两种都戴，戴透明片更多']},
+ {id:'q4a',when:a=>a.q3?.includes(0),t:'你不戴透明片的原因是？',m:1,o:['和美瞳相比，没有修饰眼睛、完善妆容的功能','美瞳的舒适度足够，没有尝试透明片的动力','不清楚透明片和美瞳除有无花纹外有什么区别']},
+ {id:'q5a',when:a=>a.q3?.includes(0),t:'如 moody 提供免费的透明片试用，你是否愿意尝试佩戴？',o:['愿意','不愿意']},
+ {id:'q6a',when:a=>a.q3?.includes(0),t:'如果佩戴感很好，什么样的日抛 10 片装价位是后续会考虑购买的？',o:['20元及以下','20-30元','30-40元','40-50元','50元以上']},
+ {id:'q4b',when:a=>a.q3?.some(x=>x>0),t:'你平时会购买哪种类型的透明片？',m:1,o:['日抛','月抛','双周抛','季抛','半年抛','年抛']},
+ {id:'q5b',when:a=>a.q3?.some(x=>x>0),t:'你平时会在哪些场景佩戴透明片？',m:1,o:['上班','上学','运动/健身','长时间通勤（如旅行、出差途中等）','淡妆或素颜出门时','无社交或拍照需求时都会戴透明片']},
+ {id:'q6b',when:a=>a.q3?.some(x=>x>0),t:'你是否购买过 moody 的透明片？',o:['经常买','偶尔买','曾经买过，现在不买了','从没买过']},
+ {id:'q7b1',when:a=>a.q6b?.some(x=>x<2),t:'买过的 moody 透明片是？',m:1,media:'series',o:['moody 目怡蓝 M 系列','moody 目怡蓝薄润系列','moody 目怡蓝 S 系列']},
+ {id:'q8b1',when:a=>a.q6b?.some(x=>x<2),t:'购买 moody 透明片的契机是？',m:1,o:['大促期间凑单','刷到博主种草帖后买来尝试','出于对 moody 美瞳的喜爱及品牌信任','被“新手友好”的卖点打动','被“水润”“舒适”等佩戴感受卖点打动','被“高透氧”“泪循环”等产品参数/功能打动','价格划算','被包装吸引']},
+ {id:'q9b1',when:a=>a.q6b?.some(x=>x<2),t:'除了 moody 以外，你日常还购买哪些品牌的透明片？',m:1,o:['强生安视优','博士伦','拉拜诗','爱尔康','库博光学','欧舒天','目立康 Miru','海昌','海俪恩','卫康','优瞳','可啦啦','只买 moody 的透明片','其他'],other:13},
+ {id:'q10b1',when:a=>a.q6b?.some(x=>x<2),t:'你对 moody 透明片的哪些方面感到满意？',m:1,o:['不磨眼','久戴不干涩','不滑片','不模糊','好戴、好摘','价格划算','包装好看']},
+ {id:'q7b2',when:a=>a.q6b?.includes(2),t:'最初购买 moody 透明片的契机是？',m:1,max:3,o:['出于对 moody 美瞳的喜爱及品牌信任','刷到博主种草帖后买来尝试','被“新手友好”的卖点打动','被“水润”“舒适”等佩戴感受卖点打动','被“高透氧”“泪循环”等产品参数/功能打动','大促期间凑单','价格划算','被包装吸引']},
+ {id:'q8b2',when:a=>a.q6b?.includes(2),t:'为什么后来不再购买了？',m:1,o:['对舒适度不满意','发现材质更好的产品','发现功能更丰富的产品（如防蓝光等）','发现价格更合适的产品','发现外包装更好看的产品','做了近视矫正手术','其他'],other:6},
+ {id:'q9b2',when:a=>a.q6b?.includes(2),t:'以下哪些改进会让你重新选择购买 moody 透明片？',m:1,o:['镜片材质升级（如提高透氧等）','舒适度提升','增加护眼功能（如防蓝光、减轻干眼、减少眼睛酸胀等）','价格更优惠','外包装升级','以上都不会','其他'],other:6},
+ {id:'q7b3',when:a=>a.q6b?.includes(3),t:'没有购买 moody 透明片的原因是？',m:1,o:['不知道 moody 有透明片','购买透明片时优先考虑其他品牌','包装不够好看','价格不够优惠']},
+ {id:'q8b3',when:a=>a.q6b?.includes(3),t:'你日常购买的是哪些品牌的透明隐形眼镜？',m:1,o:['强生安视优','博士伦','拉拜诗','小桔片','爱尔康','小蓝片','库博光学','欧舒天','目立康 Miru','海昌','海俪恩','卫康','优瞳','可啦啦','其他'],other:14},
+ {id:'q9b3',when:a=>a.q6b?.includes(3),t:'选择以上品牌的原因是？',m:1,o:['大品牌保障','产品参数足够好（高含水/高透氧）','明星/博主推荐','实际试戴体验后觉得很舒服','在购物软件首页刷到','价格优惠','包装好看','其他'],other:7},
+ {id:'q10b3',when:a=>a.q6b?.includes(3),t:'以下哪种方式最可能促使你第一次购买 moody 的透明隐形眼镜？',o:['提供9.9元试用装','会员积分兑换透明片试用装','博主真实测评种草','医生/专业机构背书','不会尝试']},
+ {id:'q11',when:a=>!a.q3?.includes(0),t:'你对日抛 10 片装透明隐形眼镜的价格预期是？',o:['20元及以下','20-30元','30-40元','40-50元','50元以上']},
+ {id:'q12',t:'你愿意因为什么接受比预期更高的透明隐形眼镜价格？',m:1,max:3,o:['权威性医疗背书（如与三甲医院联合研制）','突破性的材质/含水量/镜片厚度/透氧量','由信任或熟悉的品牌推出','与你喜欢的 IP 联名','漂亮的包装设计','其他'],other:5,otherMax:100},
+ {id:'q13',t:'你通常通过什么渠道了解隐形眼镜新品？',m:1,o:['小红书','抖音','淘宝/天猫','拼多多','京东','朋友或家人推荐','b站','视频号','线下门店','其他'],other:9},
+ {id:'q14',t:'哪种内容最容易让你对透明隐形眼镜产生兴趣？',m:1,max:3,o:['测评类','科普类','长时间佩戴体验测评','大规格促销或试用装薅羊毛活动','其他'],other:4},
+ {id:'degree',t:'最后一步：你的隐形眼镜度数是？',select:1,o:degree}
+];
+let ans={},pos=0,draft=[],path=[],q7ScrollTop=0,optionScrollByQuestion={};const screen=document.querySelector('#screen'),toast=document.querySelector('#toast');
+const colorOnlyRoute=new Set(['q1','q2','q3','q4a','q5a','q6a','degree']);
+const active=()=>{const available=qs.filter(q=>!q.when||q.when(ans));return ans.q3?.includes(0)?available.filter(q=>colorOnlyRoute.has(q.id)):available};
+const routeTotal=()=>{
+ if(ans.q3?.includes(0))return 7;
+ if(ans.q6b?.includes(2))return 14;
+ return 15;
+};
+function media(q){
+ if(q.id==='q7b1'){const cards=[{i:0,img:'assets/m-series.png',name:'目怡蓝 M 系列',desc:'水润保湿 舒适日抛'},{i:1,img:'assets/air-series.png',name:'目怡蓝薄润系列',desc:'轻薄透气 清爽日抛'},{i:2,img:'assets/s-series.png',name:'目怡蓝 S 系列',desc:'锁色持久 自然放大'}];return `<div class="visual-grid series-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}"><strong>${c.name}</strong><em>${c.desc}</em><span>点击选择</span></button>`).join('')}</div>`}
+ if(q.id==='q15')return `<div class="media-grid three"><img class="product" src="assets/m-series.png"><img class="product" src="assets/air-series.png"><img class="product" src="assets/s-series.png"></div>`;
+ if(q.id==='q16'){const cards=[{i:0,img:'assets/package-a.png',name:'新包装 Demo A'},{i:1,img:'assets/package-b.png',name:'新包装 Demo B'}];return `<div class="visual-grid pack-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}"><strong>${c.name}</strong><span>点击选择</span></button>`).join('')}</div>`}
+ return ''}
+function show(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
+function render(){
+ path=active();pos=Math.min(pos,path.length-1);const q=path[pos];draft=[...(ans[q.id]||[])];
+ const hint=q.select?'请选择度数':q.m?`多选${q.max?`，最多选 ${q.max} 项`:''}`:'单选';
+ let opts=q.select
+  ?`<select class="select" id="degree"><option value="">请选择度数</option>${q.o.map((x,i)=>`<option value="${i}" ${draft.includes(i)?'selected':''}>${x}</option>`).join('')}</select>`
+  :q.o.map((x,i)=>{
+    const otherMax=q.otherMax||500;
+    const otherField=q.other===i&&draft.includes(i)?`<label class="other-field"><input class="other" id="other" maxlength="${otherMax}" placeholder="${q.otherMax?`请输入其他原因（${otherMax}字以内）`:'请填写其他内容'}"><span class="other-count" ${q.otherMax?'':'hidden'}>${String(ans[q.id+'Text']||'').length}/${otherMax}</span></label>`:'';
+    return `<button class="option ${q.m?'':'single'} ${draft.includes(i)?'on':''}" data-i="${i}"><i class="mark"></i><span>${x}</span></button>${otherField}`;
+   }).join('');
+ if(!q.select&&!q.media&&q.o.length<8)opts+=Array.from({length:8-q.o.length},()=>`<span class="option placeholder"></span>`).join('');
+ screen.className='shell '+q.id;
+ screen.innerHTML=`<div class="ring"></div><i class="spark s1">★</i><i class="spark s2">✦</i><i class="spark s3">★</i><div class="progress"><i style="width:${(pos+1)/routeTotal()*100}%"></i></div><div class="counter">第 <b>${pos+1}</b> 题 / 共 <b>${routeTotal()}</b> 题</div><div class="hero"><img class="mascot" src="${A}assets/moody-ip.png" alt="moody IP 形象"><div class="question ${q.t.length>28?'long':''}"><div>${q.t}<small class="hint">${hint}</small></div></div></div>${media(q)}<div class="options ${!q.select&&q.o.length>8?'many':''} ${q.id}">${opts}</div><div class="actions"><button class="btn back" ${pos?'':'disabled'}>上一步</button><button class="btn next" ${draft.length?'':'disabled'}>${pos===path.length-1?'提交问卷':'下一题 →'}</button></div>`;
+ screen.querySelectorAll('.option,.visual-choice').forEach(el=>el.onclick=()=>pick(q,+el.dataset.i));
+ const q7List=screen.querySelector('.series-select');if(q.id==='q7b1'&&q7List){q7List.scrollTop=q7ScrollTop;q7List.onscroll=()=>{q7ScrollTop=q7List.scrollTop}}
+ const optionList=screen.querySelector('.options');if(optionList&&!q.select&&!['q7b1','q15','q16'].includes(q.id)){optionList.scrollTop=optionScrollByQuestion[q.id]||0;optionList.onscroll=()=>{optionScrollByQuestion[q.id]=optionList.scrollTop}}
+ const other=screen.querySelector('#other');if(other){other.value=ans[q.id+'Text']||'';other.oninput=()=>{if(q.otherMax&&other.value.length>q.otherMax)other.value=other.value.slice(0,q.otherMax);ans[q.id+'Text']=other.value;const count=screen.querySelector('.other-count');if(count)count.textContent=`${other.value.length}/${q.otherMax||500}`}}
+ const sel=screen.querySelector('#degree');if(sel)sel.onchange=()=>{draft=sel.value===''?[]:[+sel.value];sync()};screen.querySelector('.back').onclick=back;screen.querySelector('.next').onclick=next
+}
+function pick(q,i){if(q.m){if(draft.includes(i)){draft=draft.filter(x=>x!==i);if(q.other===i)delete ans[q.id+'Text']}else if(draft.length>=(q.max||99))return show(`最多选择 ${q.max} 项`);else draft.push(i)}else draft=[i];ans[q.id]=[...draft];render()}
+function sync(){const b=screen.querySelector('.next');b.disabled=!draft.length}
+function next(){const q=path[pos];if(!draft.length)return show('请选择一个答案');const other=screen.querySelector('#other');if(q.other!==undefined&&draft.includes(q.other)&&(!other||!other.value.trim()))return show('请填写“其他”内容');if(other&&q.otherMax&&other.value.trim().length>q.otherMax)return show(`其他内容不能超过 ${q.otherMax} 字`);ans[q.id]=[...draft];if(other)ans[q.id+'Text']=other.value.trim();if(pos<active().length-1){pos++;render();scrollTo({top:0,behavior:'smooth'})}else result()}
+function back(){if(!pos)return;pos--;render();scrollTo({top:0,behavior:'smooth'})}
+function result(){scrollTo({top:0,behavior:'smooth'});const fail=ans.q5a?.includes(1)||ans.q10b3?.includes(4);const code='WJ-'+Math.random().toString(36).slice(2,8).toUpperCase()+'-02';screen.innerHTML=fail?`<div class="result fail"><div class="brand">moody <b>用户调研问卷</b></div><img class="result-ip" src="${A}assets/moody-ip.png"><div class="result-panel"><div class="badge">!</div><h1>很抱歉，暂未获得领奖资格</h1><p>感谢您的参与！</p><p>经系统判断，您本次填写暂未符合活动领奖条件，因此无法生成兑换码。</p><p>别灰心，后续 moody 还会不定期开放更多福利活动，期待下次与您见面～</p></div><button class="btn back redeem" onclick="restart()">重新填写</button></div>`:`<div class="result"><div class="brand">moody <b>用户调研问卷</b></div><img class="result-ip" src="${A}assets/moody-ip.png"><div class="result-panel"><div class="badge">✓</div><h1>提交成功！</h1><p>您的兑换码如下，点击“去兑奖”将自动复制并前往下单。</p><div class="code" id="code">${code}</div><button class="btn next redeem" id="redeem">去兑奖 →</button></div><div class="notes"><b>★ 使用说明</b><ol><li>本问卷分为两部分：第一部分较短，提交后即可获得兑换码。</li><li>点击“去兑奖”会自动复制兑换码。</li><li>下单时在订单备注中粘贴该兑换码，即可领取对应奖励。</li><li>每台设备仅可填写一次。</li></ol></div></div>`;const r=document.querySelector('#redeem');if(r)r.onclick=async()=>{try{await navigator.clipboard.writeText(code);show('兑换码已复制')}catch{show('请长按复制兑换码')}}}
+function restart(){ans={};pos=0;render()}render();
+</script>
+<script>
+(() => {
+  const surveyScreen = document.getElementById('screen');
+  const productNames = [
+    ['M日抛'],
+    ['薄润日抛'],
+    ['S日抛']
+  ];
+  const question7Products = [
+    ['assets/q7-product-m.png', '目怡蓝 M 系列'],
+    ['assets/q7-product-air.png', '目怡蓝薄润系列'],
+    ['assets/q7-product-s.png', '目怡蓝 S 系列']
+  ];
+  const ensureQuestion14Copy = () => {
+    if (surveyScreen.classList.contains('q7b1')) {
+      surveyScreen.querySelectorAll('.series-select .visual-choice').forEach((card, index) => {
+        const product = question7Products[index];
+        if (!product) return;
+        const image = card.querySelector('img');
+        const name = card.querySelector('strong');
+        if (image && image.getAttribute('src') !== product[0]) {
+          image.src = product[0];
+          image.alt = product[1];
+        }
+        if (name && name.textContent !== product[1]) name.textContent = product[1];
+        card.querySelector('em')?.remove();
+        card.querySelector('span')?.remove();
+        card.setAttribute('aria-label', product[1]);
+      });
+    }
+    if (!surveyScreen.classList.contains('q15')) return;
+    if (surveyScreen.querySelector('.q15-live-copy')) return;
+    const layer = document.createElement('div');
+    layer.className = 'q15-live-copy';
+    layer.innerHTML = productNames.map(([variant]) => `
+      <div class="q15-product-name">
+        <span class="line-one"><span class="latin">moody +&nbsp;</span><span class="zh">目怡蓝</span></span>
+        <span class="line-two">${variant}</span>
+      </div>`).join('');
+    surveyScreen.appendChild(layer);
+  };
+  new MutationObserver(ensureQuestion14Copy).observe(surveyScreen, {attributes:true, childList:true});
+  ensureQuestion14Copy();
+})();
+</script>
+<script>
+(() => {
+  result = function renderRewardPage() {
+    window.scrollTo({top:0, behavior:'smooth'});
+    const code = 'WJ-' + Math.random().toString(36).slice(2,8).toUpperCase() + '-02';
+    screen.className = 'shell reward-shell';
+    screen.innerHTML = `
+      <div class="reward-v2">
+        <div class="reward-title" aria-label="moody 老朋友白片探索计划">
+          <div class="title-line"><img class="moody-logo" src="assets/moody-logo-original.png" alt="moody"><span>老朋友</span></div>
+          <div><em>白片</em>探索计划</div>
+        </div>
+        <div class="reward-copy">提交成功！您的兑换码如下，<br>点「去兑奖」将自动复制并前往下单<br>（在订单备注粘贴即可领奖）：</div>
+        <div class="reward-code" id="code">${code}</div>
+        <button class="reward-redeem" id="redeem" type="button"><span class="reward-redeem-label">去兑奖 <span aria-hidden="true">→</span></span></button>
+        <section class="reward-instructions" aria-labelledby="reward-notes-title">
+          <img class="reward-notes-star" src="assets/reward-notes-star.png" alt="">
+          <h2 id="reward-notes-title">使用说明</h2>
+          <ol>
+            <li><span>提交后点「去兑奖」会自动复制兑换码并前往店铺。</span></li>
+            <li><span>下单时在订单备注中粘贴该兑换码，即可领取对应奖励。</span></li>
+            <li><span>每台设备仅可填写一次。</span></li>
+          </ol>
+        </section>
+      </div>`;
+    const redeem = document.querySelector('#redeem');
+    redeem?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+        show('兑换码已复制');
+      } catch {
+        show('请长按复制兑换码');
+      }
+    });
+  };
+})();
+</script><script src="survey-submit.js?v=20260805-3"></script></body></html>
