@@ -2,6 +2,11 @@ data/
 tools/
 node_modules/
 assets/fonts/NotoSansSC-*.otf
+.venv/
+__pycache__/
+*.py[cod]
+survey.db
+*.sqlite
 
 .env
 .env.*

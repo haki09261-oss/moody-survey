@@ -1,0 +1,371 @@
+<!-- web/admin/index.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>问卷后台</title>
+  <style>
+    body { font-family: -apple-system, "PingFang SC", sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 6px 10px; font-size: 13px; }
+    th { background: #fafafa; }
+    .bar { margin-bottom: 12px; }
+    input, select, button { padding: 6px 8px; margin-right: 6px; }
+    .flagged { color: #d4380d; }
+    .tabbtn { padding: 8px 16px; border: 0; background: #f0f0f0; margin-right: 4px; cursor: pointer; border-radius: 6px 6px 0 0; }
+    .tabbtn.on { background: #ff5000; color: #fff; }
+  </style>
+</head>
+<body>
+  <h2>问卷提交记录</h2>
+  <div class="bar">
+    账号 <input id="user" value="admin" placeholder="用户名"
+      autocapitalize="off" autocorrect="off" autocomplete="username" spellcheck="false" />
+    密码 <input id="pass" type="password" value="" placeholder="请输入后台密码"
+      autocapitalize="off" autocorrect="off" autocomplete="current-password" spellcheck="false" />
+    问卷ID <input id="survey" value="1" placeholder="survey_id（可空）" />
+    兑换码 <input id="code" placeholder="粘贴完整兑换码核验" style="width:210px" />
+    状态
+    <select id="status">
+      <option value="">全部</option>
+      <option value="new">new</option>
+      <option value="flagged">flagged</option>
+      <option value="in_progress">in_progress</option>
+      <option value="redeemed">redeemed</option>
+      <option value="rejected">rejected</option>
+    </select>
+    渠道
+    <select id="channel">
+      <option value="">全部</option>
+      <option value="tmall">天猫 tmall</option>
+      <option value="douyin">抖音 douyin</option>
+      <option value="sms">短信 sms</option>
+      <option value="test">测试 test</option>
+    </select>
+    <button onclick="load()">查询</button>
+    <button onclick="batchDel()" style="color:#cf1322;">批量删除</button>
+    <span id="msg" style="margin-left:8px;color:#666;"></span>
+  </div>
+  <div class="tabs" style="margin-top:8px;">
+    <button id="tabBtnSub" class="tabbtn on" onclick="switchTab('sub')">提交记录</button>
+    <button id="tabBtnOpen" class="tabbtn" onclick="switchTab('open')">打开未提交</button>
+    <button id="tabBtnAna" class="tabbtn" onclick="switchTab('ana')">埋点分析</button>
+  </div>
+  <div id="tabSub">
+    <table>
+      <thead><tr><th><input type="checkbox" id="ckAll" onclick="toggleAll(this)" title="全选" /></th><th>兑换码</th><th>渠道</th><th>风险分</th><th>标记</th><th>状态</th><th>层级</th><th>IP</th><th>设备</th><th>时间</th><th>操作</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div id="tabOpen" style="display:none">
+    <div id="openTable" style="margin:8px 0;"></div>
+  </div>
+  <div id="tabAna" style="display:none">
+    <div id="eventTable" style="margin:8px 0;"></div>
+    <div id="eventDetail" style="margin:8px 0;"></div>
+  </div>
+  <script>
+    function setMsg(text, color) {
+      const el = document.getElementById("msg");
+      el.textContent = text;
+      el.style.color = color || "#666";
+    }
+    function authHeader() {
+      const u = document.getElementById("user").value.trim();
+      const p = document.getElementById("pass").value;
+      return "Basic " + btoa(unescape(encodeURIComponent(u + ":" + p)));
+    }
+    function query() {
+      const sid = document.getElementById("survey").value;
+      const st = document.getElementById("status").value;
+      const ch = document.getElementById("channel").value;
+      const code = document.getElementById("code").value.trim();
+      const q = new URLSearchParams();
+      if (sid) q.set("survey_id", sid);
+      if (st) q.set("status", st);
+      if (ch) q.set("channel", ch);
+      if (code) q.set("code", code);
+      return q.toString();
+    }
+    async function load() {
+      setMsg("查询中…");
+      let resp;
+      try {
+        resp = await fetch("/admin/submissions?" + query(), { headers: { Authorization: authHeader() } });
+      } catch (e) {
+        setMsg("无法连接服务器", "#d4380d");
+        return;
+      }
+      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
+      if (!resp.ok) { setMsg("查询失败（HTTP " + resp.status + "）", "#d4380d"); return; }
+      const data = await resp.json();
+      const tbody = document.getElementById("rows");
+      tbody.innerHTML = "";
+      setMsg(data.items.length ? ("登录成功：共 " + data.items.length + " 条记录") : "登录成功：暂无数据", "#389e0d");
+      data.items.forEach((it) => {
+        const tr = document.createElement("tr");
+        if (it.status === "flagged") tr.className = "flagged";
+        const d = it.device || {};
+        const devSummary = it.device_label || [d.platform, d.screen, d.timezone].filter(Boolean).join(" · ");
+        const devFull = JSON.stringify(it.device || {}, null, 2) + "\n\nUA: " + (it.ua || "");
+        tr.innerHTML =
+          `<td><input type="checkbox" class="rowck" value="${it.id}" /></td>` +
+          `<td>${it.display_code || it.redeem_code}</td><td>${it.channel}</td><td>${it.risk_score}</td>` +
+          `<td>${(it.risk_flags || []).join(",")}</td><td>${it.status}</td>` +
+          `<td>${it.tier_reached ?? ""}</td>` +
+          `<td>${it.ip || ""}</td>` +
+          `<td title="${devFull.replace(/"/g, "&quot;")}" style="cursor:help;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${devSummary || "—"}</td>` +
+          `<td>${fmtTime(it.created_at)}</td>` +
+          `<td><button onclick="showEvents(${it.id})">详情</button> ` +
+          (it.status === "redeemed" ? `<span style="color:#389e0d;font-weight:700;">已核销</span> ` :
+            (it.status === "rejected" || it.status === "in_progress" ? "" : `<button onclick="redeem(${it.id})" style="color:#389e0d;">核销</button> `)) +
+          `<button onclick="del(${it.id})">删除</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    function switchTab(t) {
+      document.getElementById("tabSub").style.display = t === "sub" ? "" : "none";
+      document.getElementById("tabOpen").style.display = t === "open" ? "" : "none";
+      document.getElementById("tabAna").style.display = t === "ana" ? "" : "none";
+      document.getElementById("tabBtnSub").classList.toggle("on", t === "sub");
+      document.getElementById("tabBtnOpen").classList.toggle("on", t === "open");
+      document.getElementById("tabBtnAna").classList.toggle("on", t === "ana");
+      if (t === "ana") loadEventTable();
+      if (t === "open") loadOpenTable();
+    }
+    // 「打开未提交」：列出已领 token 但无提交的设备（含是否已过期）
+    async function loadOpenTable() {
+      const box = document.getElementById("openTable");
+      const sid = document.getElementById("survey").value;
+      const ch = document.getElementById("channel").value;
+      const q = new URLSearchParams({ only_unsubmitted: "true" });
+      if (sid) q.set("survey_id", sid);
+      if (ch) q.set("channel", ch);
+      box.innerHTML = "加载中…";
+      let resp;
+      try {
+        resp = await fetch("/admin/distributions?" + q.toString(), { headers: { Authorization: authHeader() } });
+      } catch (e) { box.innerHTML = "无法连接服务器"; return; }
+      if (resp.status === 401) { box.innerHTML = "账号或密码错误"; return; }
+      if (!resp.ok) { box.innerHTML = "加载失败（HTTP " + resp.status + "）"; return; }
+      const d = await resp.json();
+      const rows = (d.items || []).map((it) =>
+        `<tr>
+           <td><input type="checkbox" class="openck" value="${it.id}" /></td>
+           <td>${it.channel || ""}</td>
+           <td>${it.user_code || ""}</td>
+           <td>${it.expired ? '<span style="color:#d4380d;">已过期</span>' : '<span style="color:#389e0d;">有效</span>'}</td>
+           <td>${fmtTime(it.opened_at)}</td>
+           <td>${fmtTime(it.expires_at)}</td>
+           <td>${it.ip || ""}</td>
+           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(it.fingerprint || "")}">${it.fingerprint || ""}</td>
+           <td><button onclick="delOpen(${it.id})">删除</button></td>
+         </tr>`).join("");
+      box.innerHTML =
+        `<div style="margin:6px 0;color:#555;">打开了链接但未提交：<b>${(d.items || []).length}</b> 条`
+        + `${sid ? "" : '（建议在上方填问卷ID过滤，否则为全部问卷）'}</div>`
+        + `<div style="margin:6px 0;"><button onclick="batchDelOpen()" style="color:#cf1322;">批量删除选中</button></div>`
+        + `<table><thead><tr><th><input type="checkbox" id="ckAllOpen" onclick="toggleAllOpen(this)" title="全选" /></th><th>渠道</th><th>用户码</th><th>状态</th><th>打开时间</th><th>过期时间</th><th>IP</th><th>设备指纹</th><th>操作</th></tr></thead>`
+        + `<tbody>${rows || '<tr><td colspan="9" style="color:#888;">暂无数据</td></tr>'}</tbody></table>`;
+    }
+    function toggleAllOpen(ck) {
+      document.querySelectorAll(".openck").forEach((c) => { c.checked = ck.checked; });
+    }
+    async function batchDelOpen() {
+      const ids = Array.from(document.querySelectorAll(".openck:checked")).map((c) => parseInt(c.value, 10));
+      if (!ids.length) { setMsg("请先勾选要删除的记录", "#d4380d"); return; }
+      if (!confirm(`确定删除选中的 ${ids.length} 条「打开未提交」记录？删后这些设备可重新领码参与，不可恢复。`)) return;
+      let resp;
+      try {
+        resp = await fetch("/admin/distributions/batch-delete", {
+          method: "POST",
+          headers: { Authorization: authHeader(), "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+      } catch (e) { setMsg("无法连接服务器", "#d4380d"); return; }
+      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
+      if (!resp.ok) { setMsg("批量删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
+      const r = await resp.json();
+      setMsg(`已删除 ${r.deleted} 条`, "#389e0d");
+      loadOpenTable();
+    }
+    async function delOpen(id) {
+      if (!confirm("确定删除这条「打开未提交」记录？删后该设备可重新领码参与，不可恢复。")) return;
+      let resp;
+      try {
+        resp = await fetch(`/admin/distributions/${id}`, { method: "DELETE", headers: { Authorization: authHeader() } });
+      } catch (e) { setMsg("无法连接服务器", "#d4380d"); return; }
+      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
+      if (!resp.ok) { setMsg("删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
+      loadOpenTable();
+    }
+    const fmtVal = (v) => Array.isArray(v) ? v.join("、") : (v == null ? "" : v);
+    const sec = (ms) => ((ms || 0) / 1000).toFixed(1) + "s";
+    // 后端已统一存北京时间（naive，UTC+8），直接展示，不再做时区换算。
+    function fmtTime(iso) {
+      if (!iso) return "";
+      return String(iso).replace("T", " ").replace(/\.\d+.*$/, "").replace(/[zZ]$/, "");
+    }
+    // 埋点分析主视图：总览 + 每题报表（看过人数/平均停留/选项分布），原始明细折叠按需加载
+    async function loadEventTable() {
+      const sid = document.getElementById("survey").value;
+      const box = document.getElementById("eventTable");
+      if (!sid) { box.innerHTML = '<div style="color:#888;">请先在上方填写问卷ID再切到本页。</div>'; return; }
+      box.innerHTML = "加载分析…";
+      let resp;
+      try {
+        resp = await fetch(`/admin/surveys/${sid}/question-stats`, { headers: { Authorization: authHeader() } });
+      } catch (e) { box.innerHTML = "无法连接服务器"; return; }
+      if (resp.status === 401) { box.innerHTML = "账号或密码错误"; return; }
+      if (!resp.ok) { box.innerHTML = "分析加载失败（HTTP " + resp.status + "）"; return; }
+      const d = await resp.json();
+      const conv = d.uv ? Math.round(d.submissions * 100 / d.uv) : 0;
+      const summary =
+        `<div style="margin:6px 0 12px;font-size:14px;">
+           <b>${escapeHtml(d.survey_name || "")}</b>
+           <span style="margin-left:14px;">浏览 <b>${d.pv}</b> 次 / <b>${d.uv}</b> 人</span>
+           <span style="margin-left:14px;">提交 <b>${d.submissions}</b> 份</span>
+           <span style="margin-left:14px;">转化率 <b>${conv}%</b></span>
+         </div>`;
+      const qblocks = (d.questions || []).map((q, i) => {
+        const bars = (q.options || []).map((o) =>
+          `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
+             <div style="width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(o.option)}">${escapeHtml(o.option)}</div>
+             <div style="flex:1;max-width:340px;background:#fff3e8;border-radius:4px;height:16px;">
+               <div style="width:${o.pct}%;background:#ff8a3d;height:16px;border-radius:4px;"></div>
+             </div>
+             <div style="width:96px;color:#555;font-size:12px;">${o.count} 人（${o.pct}%）</div>
+           </div>`).join("") || '<div style="color:#999;font-size:13px;">暂无作答</div>';
+        return `<div style="border:1px solid #f0e0cf;border-radius:8px;padding:10px 14px;margin:8px 0;background:#fffdf9;">
+            <div style="font-weight:700;margin-bottom:4px;">${i + 1}. ${escapeHtml(q.q_title || q.q_id || "")}
+              <span style="font-weight:400;color:#999;font-size:12px;margin-left:8px;">${escapeHtml(q.q_type || "")}</span>
+            </div>
+            <div style="color:#888;font-size:13px;margin-bottom:8px;">
+              看过 <b>${q.viewers}</b> 人 · 平均停留 <b>${sec(q.avg_dwell_ms)}</b> · 作答 <b>${q.answered}</b> 人
+            </div>
+            ${bars}
+          </div>`;
+      }).join("");
+      box.innerHTML = summary + (qblocks || '<div style="color:#888;">该问卷暂无埋点数据。</div>') +
+        `<details style="margin-top:14px;"><summary style="cursor:pointer;color:#555;">原始明细表（每答卷 × 每题 × 每选项）</summary>
+           <div id="rawEventTable" style="margin-top:8px;">展开加载中…</div>
+         </details>`;
+      const det = box.querySelector("details");
+      if (det) det.addEventListener("toggle", function () { if (det.open) loadRawEventTable(sid); }, { once: true });
+    }
+    // 原始扁平明细（旧视图），按需加载
+    async function loadRawEventTable(sid) {
+      const box = document.getElementById("rawEventTable");
+      let resp;
+      try {
+        resp = await fetch(`/admin/surveys/${sid}/event-rows`, { headers: { Authorization: authHeader() } });
+      } catch (e) { box.innerHTML = "无法连接服务器"; return; }
+      if (!resp.ok) { box.innerHTML = "明细加载失败"; return; }
+      const d = await resp.json();
+      const cols = ["兑换码", "层级", "总停留", "问卷ID", "问卷名称", "问题类型", "问题ID", "问题名称",
+                    "问题选择结果", "问题停留时间", "是否提交", "UV", "PV"];
+      const head = "<tr>" + cols.map((c) => `<th>${c}</th>`).join("") + "</tr>";
+      const body = (d.rows || []).map((r) =>
+        "<tr>" + [
+          r.redeem_code || "—", r.tier_reached, sec(r.total_dwell_ms), d.survey_id, d.survey_name,
+          r.q_type || "", r.q_id || "", r.q_title || "",
+          fmtVal(r.option) || "—", sec(r.q_dwell_ms), r.submitted, d.uv, d.pv,
+        ].map((v) => `<td>${escapeHtml(v)}</td>`).join("") + "</tr>").join("");
+      box.innerHTML = (d.rows || []).length
+        ? `<div style="overflow-x:auto;"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`
+        : `<div style="color:#888;">暂无带埋点会话的数据。</div>`;
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    async function showEvents(id) {
+      switchTab("ana");
+      const box = document.getElementById("eventDetail");
+      box.style.color = "";
+      box.innerHTML = "加载埋点详情…";
+      let resp;
+      try {
+        resp = await fetch(`/admin/submissions/${id}/events`, { headers: { Authorization: authHeader() } });
+      } catch (e) { box.innerHTML = ""; return; }
+      if (!resp.ok) { box.innerHTML = "埋点查询失败"; return; }
+      const d = await resp.json();
+      if (!d.session_id) { box.innerHTML = `该答卷无关联埋点会话。`; return; }
+      const fmtVal = (v) => Array.isArray(v) ? v.join("、") : (v == null ? "" : v);
+      const qrows = (d.questions || []).map((q) =>
+        `<tr><td>${escapeHtml(q.question_id)}</td><td>${escapeHtml(q.title || "")}</td>` +
+        `<td style="text-align:right;">${(q.dwell_ms / 1000).toFixed(1)}s</td>` +
+        `<td>${escapeHtml(fmtVal(q.value)) || "—"}</td></tr>`).join("");
+      const evrows = (d.events || []).map((e) => {
+        const parts = [];
+        if (e.question_id) parts.push("题:" + escapeHtml(e.question_title || e.question_id));
+        if (e.option && e.option !== "") parts.push("选:" + escapeHtml(e.option));
+        if (e.dwell_seconds != null) parts.push("停留:" + e.dwell_seconds + "s");
+        const p = parts.length ? " · " + parts.join(" · ") : "";
+        return `<div style="font-family:monospace;font-size:12px;color:#777;">${fmtTime(e.created_at)} · <b>${escapeHtml(e.name)}</b>${p}</div>`;
+      }).join("");
+      box.innerHTML =
+        `<h3 style="margin:6px 0;">提交 #${id} 埋点详情 · 会话 ${d.session_id} · 总停留 ${(d.dwell_ms / 1000).toFixed(1)}s</h3>
+         <table><thead><tr><th>题ID</th><th>题目</th><th>停留时长</th><th>所选选项</th></tr></thead>
+           <tbody>${qrows || `<tr><td colspan="4">无每题数据</td></tr>`}</tbody></table>
+         <details style="margin-top:10px;"><summary style="cursor:pointer;color:#555;">原始事件轨迹（${(d.events || []).length} 条）</summary>${evrows}</details>`;
+    }
+    function toggleAll(ck) {
+      document.querySelectorAll(".rowck").forEach((c) => { c.checked = ck.checked; });
+    }
+    async function batchDel() {
+      const ids = Array.from(document.querySelectorAll(".rowck:checked")).map((c) => parseInt(c.value, 10));
+      if (!ids.length) { setMsg("请先勾选要删除的记录", "#d4380d"); return; }
+      if (!confirm(`确定彻底删除选中的 ${ids.length} 条记录？删除后不可恢复。`)) return;
+      let resp;
+      try {
+        resp = await fetch("/admin/submissions/batch-delete", {
+          method: "POST",
+          headers: { Authorization: authHeader(), "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+      } catch (e) {
+        setMsg("无法连接服务器", "#d4380d");
+        return;
+      }
+      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
+      if (!resp.ok) { setMsg("批量删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
+      const d = await resp.json();
+      const ckAll = document.getElementById("ckAll");
+      if (ckAll) ckAll.checked = false;
+      setMsg(`已删除 ${d.deleted} 条`, "#389e0d");
+      load();
+    }
+    async function del(id) {
+      if (!confirm("确定彻底删除这条记录？删除后不可恢复。")) return;
+      let resp;
+      try {
+        resp = await fetch(`/admin/submissions/${id}`, { method: "DELETE", headers: { Authorization: authHeader() } });
+      } catch (e) {
+        setMsg("无法连接服务器", "#d4380d");
+        return;
+      }
+      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
+      if (!resp.ok) { setMsg("删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
+      load();
+    }
+    async function redeem(id) {
+      if (!confirm("确认工作人员已核对订单备注，现在核销该兑换码？核销后不可重复兑奖。")) return;
+      let resp;
+      try {
+        resp = await fetch(`/admin/submissions/${id}/redeem`, { method: "POST", headers: { Authorization: authHeader() } });
+      } catch (e) {
+        setMsg("无法连接服务器", "#d4380d");
+        return;
+      }
+      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
+      if (!resp.ok) { setMsg("核销失败（HTTP " + resp.status + "）", "#d4380d"); return; }
+      const data = await resp.json();
+      setMsg(data.already_redeemed ? "该兑换码此前已经核销，请勿重复发奖" : "核销成功，该兑换码已失效", data.already_redeemed ? "#d4380d" : "#389e0d");
+      load();
+    }
+    window.addEventListener("DOMContentLoaded", function () {
+      setMsg("请输入后台密码后点击查询。", "#666");
+    });
+  </script>
+</body>
+</html>

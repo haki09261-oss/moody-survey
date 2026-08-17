@@ -1,51 +1,64 @@
-# moody 问卷、反作弊与兑奖后台
+# moody 用户调研问卷
 
-这个版本把问卷提交、反作弊、随机兑换码和工作人员核销放进了同一条服务端链路。
+当前生产框架基于 FastAPI + SQLAlchemy，问卷结构由数据库 JSON 配置驱动。移动端、答题分流、反作弊、设备/IP 去重、随机兑换码、后台核销与数据分析共用同一套服务端数据。
 
-## 功能
+## 当前业务流程
 
-- 服务端记录答题开始时间，少于 5 秒提交的答卷标记为异常，不发兑换码。
-- 除度数题外，至少 5 道题的答案完全一致时标记为“全部选择一致”，不发兑换码。
-- 答卷不完整时标记为异常；异常答卷仍保留，便于分析规则是否误伤。
-- 有效答卷由服务端生成唯一兑换码；同一设备重复提交时返回原兑换码，不重复发码。
-- 同一设备或同一 IP 地址只能产生一份有效答卷；重复参与会被服务端拦截并记录。异常答卷不占用有效名额，可重新认真填写。
-- 第三题选择“只戴美瞳”时发放 M 系列 2 片装；选择“两种都戴”时发放 M 系列 10 片装。
-- 兑换码包含奖品规格和度数，例如 `M2-D300-XXXXXXXX`、`M10-D300-XXXXXXXX`。
-- 点击“去兑奖”会先复制兑换码，再跳转到对应的天猫 0.01 元商品链接。
-- 工作人员后台可查码、查看答卷、核销。核销后保留审计记录但无法再次兑奖。
-- 后台先给出有效率、核销率、平均时长和重复参与拦截等指标，再自动总结主要异常、奖品规格和度数分布；同时提供每日趋势、逐题选项占比和原始明细。
-- 全量答卷可导出带 UTF-8 BOM 的 CSV，Excel 可直接打开。
+- 第 3 题选择「只戴美瞳」：完成共 6 题并选择度数，获得 M 系列 2 片装。
+- 第 3 题选择任一「两种都戴」：自动继续透明片完整问卷，完成后获得 M 系列 10 片装。
+- 兑换码格式为 `WJ-XXXXXX02-525` 或 `WJ-XXXXXX10-525`，同时包含奖品片数和度数。
+- 点击「去兑奖」自动复制兑换码，并打开天猫商品 `1072972797956`。
+- 后台搜索完整兑换码后核销；已核销状态保留用于审计和分析，但不能重复兑奖。
+
+## 反作弊与数据口径
+
+- 同一设备指纹只能参与一次；同一 IP 地址只能绑定一个参与设备。
+- 少于 5 秒完成会保留为异常答卷，但前台不显示兑换码，后台禁止核销。
+- 多道题持续选择相同选项位置，或答案文字全部相同，会标记为乱填；异常答卷同样不发码。
+- 两种都戴的用户完成前三题后先保存为 `in_progress`，最终提交完整问卷时再按总耗时和全部答案判断有效性。
+- 正式题目分析以 `wj_submissions.answers_json` 为准；行为埋点只用于浏览量、停留时间和流失点，避免埋点丢失造成答案少算。
+- 后台的“核销”是状态销毁，不物理删除答卷，因此既能防止重复兑奖，也保留后续数据分析能力。
 
 ## 本地运行
 
-需要 Node.js 24 或更高版本，不需要安装第三方依赖。
-
-PowerShell：
+推荐 Python 3.12。
 
 ```powershell
-$env:ADMIN_PASSWORD='替换成至少12位的强密码'
-$env:ADMIN_SESSION_SECRET='替换成至少32位的随机字符串'
-$env:DEVICE_HASH_SALT='替换成另一段至少32位的随机字符串'
-$env:TMALL_REDEEM_URL='https://detail.tmall.com/item.htm?id=1072972797956'
-npm.cmd start
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:SURVEY_DATABASE_URL='sqlite:///./data/survey.sqlite'
+$env:SURVEY_ADMIN_SEED_USERNAME='admin'
+$env:SURVEY_ADMIN_SEED_PASSWORD='请替换为强密码'
+.\.venv\Scripts\python.exe scripts\seed_moody.py
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 3200
 ```
 
-临时多人测试时可以设置 `$env:TEST_MODE='1'`：同一设备和同一 IP 可反复提交，答卷会在后台标记为“测试”，并可独立筛选。正式上线必须使用 `TEST_MODE=0` 或不配置该变量，恢复设备与 IP 各一次的限制。
+- 问卷：<http://127.0.0.1:3200/>
+- 后台：<http://127.0.0.1:3200/admin>
+- 健康检查：<http://127.0.0.1:3200/health>
 
-如果云服务器前面使用 Nginx、负载均衡或其他可信反向代理，再设置 `$env:TRUST_PROXY='1'`，并让代理覆盖而不是透传访客自行提交的 `X-Forwarded-For`。直接对公网暴露 Node 服务时不要开启这一项，否则 IP 限制可能被伪造请求头绕过。
+## 验证
 
-- 问卷：<http://localhost:3000>
-- 工作人员后台：<http://localhost:3000/admin>
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+node --check web\survey.js
+```
 
-数据默认保存在 `data/survey.sqlite`。上线时必须为该目录配置持久化磁盘，并通过 HTTPS 访问。
+`npm.cmd run optimize:images` 仅用于重新生成 WebP 图片，不是问卷运行依赖。
 
-## 上线前检查
+## 云部署注意事项
 
-1. 配置三个环境变量，不要把真实密码写入代码或提交 Git。
-2. 确认部署环境是长期运行的 Node 服务并有持久化磁盘；纯静态托管无法保存答卷或可靠核销。
-3. 备份 `data/survey.sqlite`，并限制后台地址的访问人员。
-4. 用手机真实完成一次有效答卷、一次 5 秒内答卷，再在后台完成查询、核销、重复核销拦截和 CSV 导出。
+1. 必须配置持久化数据库或持久化磁盘，不能把正式答卷只放在临时容器文件系统。
+2. 必须通过 HTTPS，并配置真实的 `SURVEY_ADMIN_SEED_PASSWORD`。
+3. Cloudflare/Nginx 代理需覆盖客户端转发头；服务端优先读取 `CF-Connecting-IP`，再读取 `X-Forwarded-For`。
+4. 正式发布前用两台不同手机验收：2片装路径、10片装路径、同 IP 拦截、5秒异常、查码核销和二次核销。
+5. SQLite 适合临时测试；多人长期使用建议迁移到 MySQL/PostgreSQL。
 
-## 数据口径
+## 主要入口
 
-后台中的“销毁”采用核销状态而非物理删除：`issued → redeemed`。保留核销时间和工作人员，是为了防止重复兑奖并支持事后追溯；原始答题数据仍保留用于分析。
+- 问卷定义：[scripts/seed_moody.py](scripts/seed_moody.py)
+- 用户端：[web/survey.html](web/survey.html)、[web/survey.js](web/survey.js)
+- 提交/分流接口：[app/routers/survey.py](app/routers/survey.py)
+- 后台接口：[app/routers/admin.py](app/routers/admin.py)
+- 反作弊：[app/dedup.py](app/dedup.py)
+- 服务端答案校验：[app/validation.py](app/validation.py)

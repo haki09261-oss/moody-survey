@@ -1,0 +1,12 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+sqlalchemy==2.0.36
+pydantic==2.10.3
+pydantic-settings==2.6.1
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1  # pin: passlib 1.7.4 is incompatible with bcrypt>=4.1
+python-multipart==0.0.18
+PyMySQL==1.2.0          # MySQL(RDS) 驱动
+cryptography==48.0.1    # MySQL 8 caching_sha2_password 认证依赖
+httpx==0.28.1
+pytest==8.3.4

@@ -5,6 +5,7 @@ import sharp from 'sharp';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const assets = join(root, 'assets');
+const web = join(root, 'web');
 const jobs = [
   ['universal-survey-background.png', 'universal-survey-background.webp'],
   ['reward-page-clean.png', 'reward-page-clean.webp'],
@@ -22,6 +23,23 @@ for (const [inputName, outputName, width] of jobs) {
   let pipeline = sharp(input, { limitInputPixels: false }).rotate();
   if (width) pipeline = pipeline.resize({ width, withoutEnlargement: true });
   await pipeline.webp({ quality: 88, alphaQuality: 100, effort: 6, smartSubsample: true }).toFile(output);
+  const after = (await stat(output)).size;
+  console.log(`${inputName} -> ${outputName}: ${(before / 1024).toFixed(0)}KB -> ${(after / 1024).toFixed(0)}KB`);
+}
+
+const webJobs = [
+  ['survey-question-bg.png', 'survey-question-bg.webp'],
+  ['survey-plain-empty-bg.png', 'survey-plain-empty-bg.webp'],
+];
+
+for (const [inputName, outputName] of webJobs) {
+  const input = join(web, inputName);
+  const output = join(web, outputName);
+  const before = (await stat(input)).size;
+  await sharp(input, { limitInputPixels: false })
+    .rotate()
+    .webp({ quality: 86, alphaQuality: 100, effort: 6, smartSubsample: true })
+    .toFile(output);
   const after = (await stat(output)).size;
   console.log(`${inputName} -> ${outputName}: ${(before / 1024).toFixed(0)}KB -> ${(after / 1024).toFixed(0)}KB`);
 }
