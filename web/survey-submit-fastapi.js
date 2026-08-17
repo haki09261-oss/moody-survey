@@ -38,6 +38,16 @@
     .status-badge-v2{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);width:13%;aspect-ratio:1;border:5px solid #fff3df;border-radius:50%;display:grid;place-items:center;background:#ffb84c;color:#fff;font-family:"Gotham Survey",sans-serif;font-size:clamp(24px,6.5vw,38px);font-weight:900;line-height:1}
     .status-card-v2 h1{margin:0 0 5%;color:#f16624;font-size:clamp(20px,5vw,29px);font-weight:800;line-height:1.3}
     .status-card-v2 p{margin:0;font-size:clamp(12px,2.9vw,16px);font-weight:500;line-height:1.75}
+    .taobao-modal[hidden]{display:none}
+    .taobao-modal{position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:24px;background:rgba(58,31,18,.48);backdrop-filter:blur(5px)}
+    .taobao-dialog{width:min(88vw,380px);padding:26px 22px 20px;border:1px solid #f3c58d;border-radius:24px;background:#fffaf2;box-shadow:0 20px 60px rgba(72,35,12,.28);color:#4b2c1d;text-align:center}
+    .taobao-dialog-logo{width:54px;height:54px;margin:0 auto 13px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#ff8d33,#ff5b17);color:#fff;font-size:25px;font-weight:900;box-shadow:0 8px 20px rgba(255,101,25,.28)}
+    .taobao-dialog h2{margin:0 0 9px;font-size:21px;color:#e95f20}
+    .taobao-dialog p{margin:0 0 20px;font-size:14px;line-height:1.65;color:#715043}
+    .taobao-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
+    .taobao-actions button{min-height:46px;border-radius:999px;font-weight:700;cursor:pointer}
+    .taobao-cancel{border:1px solid #efc99d;background:#fff7ea;color:#9b623f}
+    .taobao-open{border:0;background:linear-gradient(180deg,#ff963c,#ff6718);box-shadow:0 5px 0 #da5515;color:#fff}
   `;
   document.head.append(statusStyles);
 
@@ -76,7 +86,7 @@
           <img class="reward-notes-star" src="assets/reward-notes-star.png" alt="">
           <h2 id="reward-notes-title">使用说明</h2>
           <ol>
-            <li><span>点「去兑奖」会自动复制兑换码并前往天猫店铺。</span></li>
+            <li><span>点「去兑奖」会复制兑换码，并询问是否打开淘宝 App。</span></li>
             <li><span>下单时在订单备注中粘贴兑换码，即可领取对应奖品。</span></li>
             <li><span>每台设备和每个 IP 仅可参与一次，每个码仅可核销一次。</span></li>
           </ol>
@@ -98,14 +108,52 @@
     screen.innerHTML = statusPage(title, copy);
   };
 
+  const taobaoDeepLink = url => `tbopen://m.taobao.com/tbopen/index.html?action=ali.open.nav&module=h5&h5Url=${encodeURIComponent(url)}`;
+
+  const askToOpenTaobao = () => {
+    document.querySelector("#taobao-modal")?.remove();
+    const modal = document.createElement("div");
+    modal.id = "taobao-modal";
+    modal.className = "taobao-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "taobao-modal-title");
+    modal.innerHTML = `
+      <div class="taobao-dialog">
+        <div class="taobao-dialog-logo" aria-hidden="true">淘</div>
+        <h2 id="taobao-modal-title">打开淘宝 App？</h2>
+        <p>兑换码已经复制。打开淘宝后，请在下单时将兑换码粘贴到订单备注。</p>
+        <div class="taobao-actions">
+          <button class="taobao-cancel" type="button">暂不打开</button>
+          <button class="taobao-open" type="button">打开淘宝 App</button>
+        </div>
+      </div>`;
+    document.body.append(modal);
+    const close = () => modal.remove();
+    modal.querySelector(".taobao-cancel")?.addEventListener("click", close);
+    modal.addEventListener("click", event => { if (event.target === modal) close(); });
+    modal.querySelector(".taobao-open")?.addEventListener("click", () => {
+      let leftPage = false;
+      const onVisibility = () => {
+        if (document.visibilityState === "hidden") leftPage = true;
+      };
+      document.addEventListener("visibilitychange", onVisibility, {once: true});
+      location.href = taobaoDeepLink(productUrl);
+      setTimeout(() => {
+        document.removeEventListener("visibilitychange", onVisibility);
+        if (!leftPage && document.visibilityState === "visible") location.assign(productUrl);
+      }, 1800);
+    });
+  };
+
   const bindRedeem = code => document.querySelector("#redeem")?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(code);
-      show("兑换码已复制，即将前往天猫");
+      show("兑换码已复制");
     } catch {
-      show("请长按复制兑换码，即将前往天猫");
+      show("请长按复制兑换码");
     }
-    setTimeout(() => location.assign(productUrl), 350);
+    askToOpenTaobao();
   });
 
   const showReward = (code, tier) => {

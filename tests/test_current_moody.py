@@ -85,6 +85,8 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert adapter.headers["content-type"].startswith("application/javascript")
     assert 'await api(`/s/${SLUG}/submit`' in adapter.text
     assert 'await api(`/s/${SLUG}/upgrade`' in adapter.text
+    assert "打开淘宝 App？" in adapter.text
+    assert "tbopen://m.taobao.com/tbopen/index.html" in adapter.text
     assert "location.assign(productUrl)" in adapter.text
 
     artwork = client.get("/s/assets/universal-survey-background.webp")
