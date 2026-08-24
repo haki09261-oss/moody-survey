@@ -1,371 +1,182 @@
-<!-- web/admin/index.html -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>问卷后台</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>moody 问卷兑奖后台</title>
   <style>
-    body { font-family: -apple-system, "PingFang SC", sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-    th, td { border: 1px solid #ddd; padding: 6px 10px; font-size: 13px; }
-    th { background: #fafafa; }
-    .bar { margin-bottom: 12px; }
-    input, select, button { padding: 6px 8px; margin-right: 6px; }
-    .flagged { color: #d4380d; }
-    .tabbtn { padding: 8px 16px; border: 0; background: #f0f0f0; margin-right: 4px; cursor: pointer; border-radius: 6px 6px 0 0; }
-    .tabbtn.on { background: #ff5000; color: #fff; }
+    :root{font-family:"Noto Sans SC",system-ui,sans-serif;color:#3d2a21;background:#fff7eb;--orange:#f56b24;--green:#138a67;--red:#c2413a}
+    *{box-sizing:border-box}body{margin:0}.wrap{width:min(1180px,calc(100% - 32px));margin:36px auto}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}h1{margin:0;font-size:27px}.muted{color:#806f65;font-size:13px}.card{background:#fff;border:1px solid #efdfce;border-radius:18px;box-shadow:0 8px 25px #7d4a1910;padding:20px}.login{width:min(420px,calc(100% - 32px));margin:14vh auto}.login input{width:100%;margin:14px 0}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.stat b{display:block;font-size:28px;margin-top:6px}.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}input,select,button{height:42px;border:1px solid #dbc8b5;border-radius:10px;background:#fff;padding:0 13px;font:inherit}input{min-width:220px}button{cursor:pointer;font-weight:650}button.primary{border-color:var(--orange);background:var(--orange);color:#fff}button.danger{border-color:var(--red);color:var(--red)}button:disabled{opacity:.45;cursor:not-allowed}.table-card{padding:0;overflow:hidden}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:13px 12px;border-bottom:1px solid #f0e7dd;text-align:left;font-size:13px;vertical-align:top}th{position:sticky;top:0;background:#fffaf4;color:#6f5a4c;z-index:1}.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:700;font-size:12px}.valid,.issued{background:#e8f7f0;color:var(--green)}.invalid{background:#fff0ee;color:var(--red)}.redeemed{background:#eee;color:#555}.none{background:#f3eee9;color:#806f65}.code{font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.05em}.empty{text-align:center;padding:50px;color:#806f65}.detail{max-width:310px;white-space:normal;line-height:1.55}.detail summary{cursor:pointer;color:#8e512e}.detail dl{margin:10px 0}.detail dt{font-weight:700;margin-top:8px}.detail dd{margin:2px 0;color:#65554b}.error{color:var(--red);min-height:20px}.hidden{display:none!important}.modal{position:fixed;inset:0;background:#27160f80;display:grid;place-items:center;padding:20px;z-index:10}.modal .card{width:min(460px,100%)}.modal input{width:100%;margin:7px 0 13px}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+    @media(max-width:760px){.wrap{margin:20px auto}.stats{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start}.tools>*{flex:1}.tools input{flex-basis:100%}}
+    .stats{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}.stat small{display:block;margin-top:5px;color:#927c6e}.test-data{margin-left:5px;background:#fff0d8;color:#b85d16}.dashboard-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:-8px 0 16px}.analysis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}.analysis-card h2,.questions-card h2,.detail-title{font-size:17px;margin:0 0 14px}.chart-empty{padding:26px 0;text-align:center;color:#927c6e}.bar-list{display:grid;gap:11px}.bar-row{display:grid;grid-template-columns:minmax(90px,1.15fr) minmax(120px,2fr) auto;align-items:center;gap:10px;font-size:13px}.bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar-track{height:10px;border-radius:999px;background:#f2e7db;overflow:hidden}.bar-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff9d57,var(--orange));min-width:2px}.bar-value{min-width:74px;text-align:right;color:#705c50}.timeline{display:flex;align-items:flex-end;gap:7px;height:150px;padding-top:16px;border-bottom:1px solid #eadbc9}.day-column{flex:1;min-width:12px;display:flex;height:100%;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.day-stack{width:min(22px,80%);display:flex;flex-direction:column;justify-content:flex-end;height:112px}.day-valid{background:#4eb28f}.day-invalid{background:#e98174}.day-label{font-size:9px;color:#8b7768;white-space:nowrap}.legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:#725f52}.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}.questions-card{margin-bottom:18px}.question-list{display:grid;gap:10px}.question-block{border:1px solid #eee1d4;border-radius:13px;padding:0 14px}.question-block summary{cursor:pointer;padding:14px 0;font-weight:700;list-style-position:inside}.question-block .bar-list{padding:0 0 16px}.section-note{font-size:12px;color:#8b7768;margin:-8px 0 14px}.detail-head{display:flex;justify-content:space-between;align-items:end;margin:20px 0 10px}.detail-title{margin:0}.metric-rate{color:var(--orange)}
+    @media(max-width:760px){.analysis-grid{grid-template-columns:1fr}.dashboard-meta{align-items:flex-start;flex-direction:column}.bar-row{grid-template-columns:minmax(76px,1fr) minmax(90px,1.5fr) auto}.day-label{display:none}.tools{display:grid;grid-template-columns:1fr 1fr}.tools>*{width:100%;min-width:0}.tools input,.tools #export{grid-column:1/-1}.top h1{font-size:23px}.top>div{min-width:0}.top button{flex:0 0 auto}}
   </style>
 </head>
 <body>
-  <h2>问卷提交记录</h2>
-  <div class="bar">
-    账号 <input id="user" value="admin" placeholder="用户名"
-      autocapitalize="off" autocorrect="off" autocomplete="username" spellcheck="false" />
-    密码 <input id="pass" type="password" value="" placeholder="请输入后台密码"
-      autocapitalize="off" autocorrect="off" autocomplete="current-password" spellcheck="false" />
-    问卷ID <input id="survey" value="1" placeholder="survey_id（可空）" />
-    兑换码 <input id="code" placeholder="粘贴完整兑换码核验" style="width:210px" />
-    状态
-    <select id="status">
-      <option value="">全部</option>
-      <option value="new">new</option>
-      <option value="flagged">flagged</option>
-      <option value="in_progress">in_progress</option>
-      <option value="redeemed">redeemed</option>
-      <option value="rejected">rejected</option>
-    </select>
-    渠道
-    <select id="channel">
-      <option value="">全部</option>
-      <option value="tmall">天猫 tmall</option>
-      <option value="douyin">抖音 douyin</option>
-      <option value="sms">短信 sms</option>
-      <option value="test">测试 test</option>
-    </select>
-    <button onclick="load()">查询</button>
-    <button onclick="batchDel()" style="color:#cf1322;">批量删除</button>
-    <span id="msg" style="margin-left:8px;color:#666;"></span>
-  </div>
-  <div class="tabs" style="margin-top:8px;">
-    <button id="tabBtnSub" class="tabbtn on" onclick="switchTab('sub')">提交记录</button>
-    <button id="tabBtnOpen" class="tabbtn" onclick="switchTab('open')">打开未提交</button>
-    <button id="tabBtnAna" class="tabbtn" onclick="switchTab('ana')">埋点分析</button>
-  </div>
-  <div id="tabSub">
-    <table>
-      <thead><tr><th><input type="checkbox" id="ckAll" onclick="toggleAll(this)" title="全选" /></th><th>兑换码</th><th>渠道</th><th>风险分</th><th>标记</th><th>状态</th><th>层级</th><th>IP</th><th>设备</th><th>时间</th><th>操作</th></tr></thead>
+  <section class="card login" id="loginPanel">
+    <h1>问卷兑奖后台</h1>
+    <p class="muted">仅供现场工作人员和数据管理员使用</p>
+    <form id="loginForm">
+      <input id="password" type="password" autocomplete="current-password" placeholder="请输入后台密码" required>
+      <button class="primary" type="submit">登录</button>
+      <p class="error" id="loginError"></p>
+    </form>
+  </section>
+
+  <main class="wrap hidden" id="dashboard">
+    <header class="top">
+      <div><h1>moody 问卷数据与兑奖后台</h1><div class="muted">数据统计、质量监控、查码与核销</div></div>
+      <button id="logout">退出</button>
+    </header>
+    <section class="tools">
+      <input id="search" placeholder="输入兑换码或提交 ID">
+      <select id="status"><option value="">全部答卷</option><option value="valid">有效答卷</option><option value="invalid">异常答卷</option></select>
+      <select id="scope"><option value="all">全部数据</option><option value="formal">正式数据</option><option value="test">测试数据</option></select>
+      <select id="days"><option value="all">全部时间</option><option value="7">近 7 天</option><option value="30">近 30 天</option></select>
+      <button class="primary" id="query">查询</button>
+      <button id="refresh">刷新</button>
+      <button id="export">导出 CSV</button>
+    </section>
+    <div class="dashboard-meta"><span class="muted">统计口径：每次提交计一份答卷；有效率＝有效答卷÷全部答卷；核销率＝已核销兑换码÷已发兑换码。</span><span class="muted" id="freshness"></span></div>
+    <section class="stats" id="stats"></section>
+    <section class="analysis-grid">
+      <article class="card analysis-card"><h2>每日答卷趋势</h2><div id="timeline"></div></article>
+      <article class="card analysis-card"><h2>异常原因分布</h2><div id="reasons"></div></article>
+      <article class="card analysis-card"><h2>奖品规格分布</h2><div id="rewards"></div></article>
+      <article class="card analysis-card"><h2>度数分布</h2><div id="degrees"></div></article>
+    </section>
+    <section class="card questions-card"><h2>每道题选项占比</h2><p class="section-note">分母为回答该题的人数；多选题各选项占比相加可能超过 100%。</p><div class="question-list" id="questions"></div></section>
+    <div class="detail-head"><div><h2 class="detail-title">答卷明细与兑奖操作</h2><span class="muted">最多显示最近 100 条，搜索仅作用于下方明细。</span></div></div>
+    <section class="card table-card"><div class="scroll"><table>
+      <thead><tr><th>ID / 时间</th><th>答卷</th><th>奖品 / 度数</th><th>兑换码</th><th>兑奖状态</th><th>答题详情</th><th>操作</th></tr></thead>
       <tbody id="rows"></tbody>
-    </table>
+    </table><div class="empty hidden" id="empty">暂时没有符合条件的数据</div></div></section>
+  </main>
+
+  <div class="modal hidden" id="redeemModal">
+    <form class="card" id="redeemForm">
+      <h2>确认核销</h2>
+      <p>兑换码：<span class="code" id="redeemCode"></span></p>
+      <label>工作人员姓名<input id="staffName" maxlength="100" required placeholder="便于后续追溯"></label>
+      <label>备注（选填）<input id="staffNote" maxlength="500" placeholder="例如：上海快闪店"></label>
+      <p class="error" id="redeemError"></p>
+      <div class="modal-actions"><button type="button" id="cancelRedeem">取消</button><button class="primary" type="submit">确认核销</button></div>
+    </form>
   </div>
-  <div id="tabOpen" style="display:none">
-    <div id="openTable" style="margin:8px 0;"></div>
-  </div>
-  <div id="tabAna" style="display:none">
-    <div id="eventTable" style="margin:8px 0;"></div>
-    <div id="eventDetail" style="margin:8px 0;"></div>
-  </div>
+
   <script>
-    function setMsg(text, color) {
-      const el = document.getElementById("msg");
-      el.textContent = text;
-      el.style.color = color || "#666";
+    const $=selector=>document.querySelector(selector);
+    const state={auth:'',surveyId:null,rows:[],opened:[],questions:null};
+    let selectedSubmissionId=null;
+    const reasonText={too_fast:'少于 5 秒',straight_line:'全部选择一致',same_answer:'答案文字一致',incomplete:'答卷不完整',TOO_FAST:'少于 5 秒',STRAIGHT_LINE:'全部选择一致',SAME_ANSWER:'答案文字一致',INCOMPLETE:'答卷不完整'};
+    const statusText={valid:'有效',invalid:'异常',issued:'待兑奖',redeemed:'已核销',none:'未发码'};
+    const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    const time=value=>value?String(value).replace('T',' ').replace(/\.\d+.*$/,'').replace(/[zZ]$/,''):'—';
+    const pct=value=>`${(Number(value||0)*100).toFixed(1)}%`;
+    const isValid=row=>row.status==='new'||row.status==='redeemed';
+    async function api(url,options={}){
+      const response=await fetch(url,{...options,headers:{...(options.headers||{}),Authorization:state.auth}});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw Object.assign(new Error(data.detail||data.error||'操作失败'),{status:response.status,data});
+      return data;
     }
-    function authHeader() {
-      const u = document.getElementById("user").value.trim();
-      const p = document.getElementById("pass").value;
-      return "Basic " + btoa(unescape(encodeURIComponent(u + ":" + p)));
+    const emptyChart=message=>`<div class="chart-empty">${esc(message)}</div>`;
+    function renderBars(target,items,labelKey='label'){
+      $(target).innerHTML=items.length?`<div class="bar-list">${items.map(item=>`<div class="bar-row" title="${esc(item[labelKey])}: ${item.count}"><span class="bar-label">${esc(item[labelKey])}</span><span class="bar-track"><i class="bar-fill" style="width:${Math.max(1,item.share*100)}%"></i></span><span class="bar-value">${item.count} · ${pct(item.share)}</span></div>`).join('')}</div>`:emptyChart('当前范围暂无数据');
     }
-    function query() {
-      const sid = document.getElementById("survey").value;
-      const st = document.getElementById("status").value;
-      const ch = document.getElementById("channel").value;
-      const code = document.getElementById("code").value.trim();
-      const q = new URLSearchParams();
-      if (sid) q.set("survey_id", sid);
-      if (st) q.set("status", st);
-      if (ch) q.set("channel", ch);
-      if (code) q.set("code", code);
-      return q.toString();
+    function frequency(values,labeler=value=>value){
+      const counts=new Map();
+      values.filter(value=>value!==null&&value!==undefined&&value!=='').forEach(value=>{const label=labeler(value);counts.set(label,(counts.get(label)||0)+1)});
+      const total=[...counts.values()].reduce((sum,count)=>sum+count,0);
+      return [...counts.entries()].sort((a,b)=>b[1]-a[1]).map(([label,count])=>({label,count,share:total?count/total:0}));
     }
-    async function load() {
-      setMsg("查询中…");
-      let resp;
-      try {
-        resp = await fetch("/admin/submissions?" + query(), { headers: { Authorization: authHeader() } });
-      } catch (e) {
-        setMsg("无法连接服务器", "#d4380d");
-        return;
-      }
-      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
-      if (!resp.ok) { setMsg("查询失败（HTTP " + resp.status + "）", "#d4380d"); return; }
-      const data = await resp.json();
-      const tbody = document.getElementById("rows");
-      tbody.innerHTML = "";
-      setMsg(data.items.length ? ("登录成功：共 " + data.items.length + " 条记录") : "登录成功：暂无数据", "#389e0d");
-      data.items.forEach((it) => {
-        const tr = document.createElement("tr");
-        if (it.status === "flagged") tr.className = "flagged";
-        const d = it.device || {};
-        const devSummary = it.device_label || [d.platform, d.screen, d.timezone].filter(Boolean).join(" · ");
-        const devFull = JSON.stringify(it.device || {}, null, 2) + "\n\nUA: " + (it.ua || "");
-        tr.innerHTML =
-          `<td><input type="checkbox" class="rowck" value="${it.id}" /></td>` +
-          `<td>${it.display_code || it.redeem_code}</td><td>${it.channel}</td><td>${it.risk_score}</td>` +
-          `<td>${(it.risk_flags || []).join(",")}</td><td>${it.status}</td>` +
-          `<td>${it.tier_reached ?? ""}</td>` +
-          `<td>${it.ip || ""}</td>` +
-          `<td title="${devFull.replace(/"/g, "&quot;")}" style="cursor:help;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${devSummary || "—"}</td>` +
-          `<td>${fmtTime(it.created_at)}</td>` +
-          `<td><button onclick="showEvents(${it.id})">详情</button> ` +
-          (it.status === "redeemed" ? `<span style="color:#389e0d;font-weight:700;">已核销</span> ` :
-            (it.status === "rejected" || it.status === "in_progress" ? "" : `<button onclick="redeem(${it.id})" style="color:#389e0d;">核销</button> `)) +
-          `<button onclick="del(${it.id})">删除</button></td>`;
-        tbody.appendChild(tr);
+    function filteredRows(includeSearch=true){
+      const status=$('#status').value,scope=$('#scope').value,days=$('#days').value,search=$('#search').value.trim().toUpperCase();
+      const cutoff=days==='all'?null:new Date(Date.now()-Number(days)*86400000);
+      return state.rows.filter(row=>{
+        if(status==='valid'&&!isValid(row))return false;
+        if(status==='invalid'&&isValid(row))return false;
+        if(scope==='formal'&&row.is_test)return false;
+        if(scope==='test'&&!row.is_test)return false;
+        if(cutoff&&new Date(row.created_at)<cutoff)return false;
+        if(includeSearch&&search&&!String(row.id).includes(search)&&!String(row.display_code||row.redeem_code||'').toUpperCase().includes(search))return false;
+        return true;
       });
     }
-    function switchTab(t) {
-      document.getElementById("tabSub").style.display = t === "sub" ? "" : "none";
-      document.getElementById("tabOpen").style.display = t === "open" ? "" : "none";
-      document.getElementById("tabAna").style.display = t === "ana" ? "" : "none";
-      document.getElementById("tabBtnSub").classList.toggle("on", t === "sub");
-      document.getElementById("tabBtnOpen").classList.toggle("on", t === "open");
-      document.getElementById("tabBtnAna").classList.toggle("on", t === "ana");
-      if (t === "ana") loadEventTable();
-      if (t === "open") loadOpenTable();
+    function renderAnalytics(rows){
+      const total=rows.length,valid=rows.filter(isValid).length,invalid=total-valid,issued=rows.filter(row=>row.reward_status==='issued').length,redeemed=rows.filter(row=>row.reward_status==='redeemed').length;
+      const issuedTotal=issued+redeemed,average=total?rows.reduce((sum,row)=>sum+Number(row.elapsed_ms||0),0)/total/1000:0;
+      const metrics=[
+        ['总答卷',total,'当前筛选范围'],['有效答卷',valid,'可用于分析'],['有效率',pct(total?valid/total:0),'有效÷全部'],['异常答卷',invalid,'保留供质检'],
+        ['待兑奖',issued,'尚未核销'],['已核销',redeemed,`核销率 ${pct(issuedTotal?redeemed/issuedTotal:0)}`],['平均答题时长',`${average.toFixed(1)}秒`,'全部提交'],['打开未提交',state.opened.length,'已打开但未提交']
+      ];
+      $('#stats').innerHTML=metrics.map(([label,value,note])=>`<div class="card stat"><span class="muted">${label}</span><b class="${label.includes('率')?'metric-rate':''}">${value}</b><small>${note}</small></div>`).join('');
+      $('#freshness').textContent=`数据更新：${time(new Date().toISOString())}`;
+      const byDay=new Map();
+      rows.slice().reverse().forEach(row=>{const date=String(row.created_at||'').slice(0,10);if(!date)return;const item=byDay.get(date)||{date,total:0,valid:0,invalid:0};item.total+=1;item[isValid(row)?'valid':'invalid']+=1;byDay.set(date,item)});
+      const timeline=[...byDay.values()].slice(-14),max=Math.max(1,...timeline.map(item=>item.total));
+      $('#timeline').innerHTML=timeline.length?`<div class="timeline">${timeline.map(item=>`<div class="day-column" title="${item.date}：共 ${item.total}，有效 ${item.valid}，异常 ${item.invalid}"><div class="day-stack"><i class="day-invalid" style="height:${item.invalid/max*100}%"></i><i class="day-valid" style="height:${item.valid/max*100}%"></i></div><span class="day-label">${item.date.slice(5)}</span></div>`).join('')}</div><div class="legend"><span><i style="background:#4eb28f"></i>有效</span><span><i style="background:#e98174"></i>异常</span></div>`:emptyChart('当前范围暂无答卷趋势');
+      renderBars('#reasons',frequency(rows.flatMap(row=>row.risk_flags||[]),value=>reasonText[value]||value));
+      renderBars('#rewards',frequency(rows.map(row=>row.prize_name)));
+      renderBars('#degrees',frequency(rows.map(row=>row.degree_label)));
+      const questionData=(state.questions?.questions||[]).map(question=>({question:question.q_title||question.q_id,respondents:question.answered,options:(question.options||[]).map(option=>({label:option.option,count:option.count,share:question.answered?option.count/question.answered:0}))}));
+      $('#questions').innerHTML=questionData.length?questionData.map((question,index)=>`<details class="question-block" ${index<3?'open':''}><summary>${esc(question.question)} <span class="muted">（${question.respondents}人）</span></summary><div class="bar-list">${question.options.map(option=>`<div class="bar-row"><span class="bar-label" title="${esc(option.label)}">${esc(option.label)}</span><span class="bar-track"><i class="bar-fill" style="width:${Math.max(1,option.share*100)}%"></i></span><span class="bar-value">${option.count} · ${pct(option.share)}</span></div>`).join('')}</div></details>`).join(''):emptyChart('当前范围暂无可汇总的题目回答');
     }
-    // 「打开未提交」：列出已领 token 但无提交的设备（含是否已过期）
-    async function loadOpenTable() {
-      const box = document.getElementById("openTable");
-      const sid = document.getElementById("survey").value;
-      const ch = document.getElementById("channel").value;
-      const q = new URLSearchParams({ only_unsubmitted: "true" });
-      if (sid) q.set("survey_id", sid);
-      if (ch) q.set("channel", ch);
-      box.innerHTML = "加载中…";
-      let resp;
-      try {
-        resp = await fetch("/admin/distributions?" + q.toString(), { headers: { Authorization: authHeader() } });
-      } catch (e) { box.innerHTML = "无法连接服务器"; return; }
-      if (resp.status === 401) { box.innerHTML = "账号或密码错误"; return; }
-      if (!resp.ok) { box.innerHTML = "加载失败（HTTP " + resp.status + "）"; return; }
-      const d = await resp.json();
-      const rows = (d.items || []).map((it) =>
-        `<tr>
-           <td><input type="checkbox" class="openck" value="${it.id}" /></td>
-           <td>${it.channel || ""}</td>
-           <td>${it.user_code || ""}</td>
-           <td>${it.expired ? '<span style="color:#d4380d;">已过期</span>' : '<span style="color:#389e0d;">有效</span>'}</td>
-           <td>${fmtTime(it.opened_at)}</td>
-           <td>${fmtTime(it.expires_at)}</td>
-           <td>${it.ip || ""}</td>
-           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(it.fingerprint || "")}">${it.fingerprint || ""}</td>
-           <td><button onclick="delOpen(${it.id})">删除</button></td>
-         </tr>`).join("");
-      box.innerHTML =
-        `<div style="margin:6px 0;color:#555;">打开了链接但未提交：<b>${(d.items || []).length}</b> 条`
-        + `${sid ? "" : '（建议在上方填问卷ID过滤，否则为全部问卷）'}</div>`
-        + `<div style="margin:6px 0;"><button onclick="batchDelOpen()" style="color:#cf1322;">批量删除选中</button></div>`
-        + `<table><thead><tr><th><input type="checkbox" id="ckAllOpen" onclick="toggleAllOpen(this)" title="全选" /></th><th>渠道</th><th>用户码</th><th>状态</th><th>打开时间</th><th>过期时间</th><th>IP</th><th>设备指纹</th><th>操作</th></tr></thead>`
-        + `<tbody>${rows || '<tr><td colspan="9" style="color:#888;">暂无数据</td></tr>'}</tbody></table>`;
+    function renderRows(rows){
+      const visible=rows.slice(0,100);
+      $('#empty').classList.toggle('hidden',visible.length>0);
+      $('#rows').innerHTML=visible.map(row=>{
+        const status=isValid(row)?'valid':'invalid',reasons=(row.risk_flags||[]).map(value=>reasonText[value]||value);
+        const details=row.answer_details||[];
+        return `<tr>
+          <td><b>#${row.id}</b><br><span class="muted">${time(row.created_at)}</span><br><span class="muted">${(Number(row.elapsed_ms||0)/1000).toFixed(1)} 秒</span></td>
+          <td><span class="pill ${status}">${statusText[status]}</span>${row.is_test?'<span class="pill test-data">测试</span>':''}${reasons.length?`<br><span class="muted">${esc(reasons.join('、'))}</span>`:''}</td>
+          <td><b>${esc(row.prize_name||'—')}</b><br><span class="muted">${esc(row.degree_label||'')}</span></td>
+          <td class="code">${esc(row.display_code||row.redeem_code||'—')}</td>
+          <td><span class="pill ${row.reward_status}">${statusText[row.reward_status]||row.reward_status}</span>${row.redeemed_at?`<br><span class="muted">${time(row.redeemed_at)}<br>${esc(row.redeemed_by||'')}</span>`:''}</td>
+          <td><details class="detail"><summary>查看 ${details.length} 项回答</summary><dl>${details.map(item=>`<dt>${esc(item.question)}</dt><dd>${esc([...(item.answer_labels||[]),item.other_text].filter(Boolean).join('、')||'—')}</dd>`).join('')}</dl></details></td>
+          <td>${row.reward_status==='issued'?`<button class="primary redeem-btn" data-id="${row.id}" data-code="${esc(row.display_code||row.redeem_code)}">核销</button>`:'—'}</td>
+        </tr>`;
+      }).join('');
+      document.querySelectorAll('.redeem-btn').forEach(button=>button.onclick=()=>openRedeem(Number(button.dataset.id),button.dataset.code));
     }
-    function toggleAllOpen(ck) {
-      document.querySelectorAll(".openck").forEach((c) => { c.checked = ck.checked; });
-    }
-    async function batchDelOpen() {
-      const ids = Array.from(document.querySelectorAll(".openck:checked")).map((c) => parseInt(c.value, 10));
-      if (!ids.length) { setMsg("请先勾选要删除的记录", "#d4380d"); return; }
-      if (!confirm(`确定删除选中的 ${ids.length} 条「打开未提交」记录？删后这些设备可重新领码参与，不可恢复。`)) return;
-      let resp;
-      try {
-        resp = await fetch("/admin/distributions/batch-delete", {
-          method: "POST",
-          headers: { Authorization: authHeader(), "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
-        });
-      } catch (e) { setMsg("无法连接服务器", "#d4380d"); return; }
-      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
-      if (!resp.ok) { setMsg("批量删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
-      const r = await resp.json();
-      setMsg(`已删除 ${r.deleted} 条`, "#389e0d");
-      loadOpenTable();
-    }
-    async function delOpen(id) {
-      if (!confirm("确定删除这条「打开未提交」记录？删后该设备可重新领码参与，不可恢复。")) return;
-      let resp;
-      try {
-        resp = await fetch(`/admin/distributions/${id}`, { method: "DELETE", headers: { Authorization: authHeader() } });
-      } catch (e) { setMsg("无法连接服务器", "#d4380d"); return; }
-      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
-      if (!resp.ok) { setMsg("删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
-      loadOpenTable();
-    }
-    const fmtVal = (v) => Array.isArray(v) ? v.join("、") : (v == null ? "" : v);
-    const sec = (ms) => ((ms || 0) / 1000).toFixed(1) + "s";
-    // 后端已统一存北京时间（naive，UTC+8），直接展示，不再做时区换算。
-    function fmtTime(iso) {
-      if (!iso) return "";
-      return String(iso).replace("T", " ").replace(/\.\d+.*$/, "").replace(/[zZ]$/, "");
-    }
-    // 埋点分析主视图：总览 + 每题报表（看过人数/平均停留/选项分布），原始明细折叠按需加载
-    async function loadEventTable() {
-      const sid = document.getElementById("survey").value;
-      const box = document.getElementById("eventTable");
-      if (!sid) { box.innerHTML = '<div style="color:#888;">请先在上方填写问卷ID再切到本页。</div>'; return; }
-      box.innerHTML = "加载分析…";
-      let resp;
-      try {
-        resp = await fetch(`/admin/surveys/${sid}/question-stats`, { headers: { Authorization: authHeader() } });
-      } catch (e) { box.innerHTML = "无法连接服务器"; return; }
-      if (resp.status === 401) { box.innerHTML = "账号或密码错误"; return; }
-      if (!resp.ok) { box.innerHTML = "分析加载失败（HTTP " + resp.status + "）"; return; }
-      const d = await resp.json();
-      const conv = d.uv ? Math.round(d.submissions * 100 / d.uv) : 0;
-      const summary =
-        `<div style="margin:6px 0 12px;font-size:14px;">
-           <b>${escapeHtml(d.survey_name || "")}</b>
-           <span style="margin-left:14px;">浏览 <b>${d.pv}</b> 次 / <b>${d.uv}</b> 人</span>
-           <span style="margin-left:14px;">提交 <b>${d.submissions}</b> 份</span>
-           <span style="margin-left:14px;">转化率 <b>${conv}%</b></span>
-         </div>`;
-      const qblocks = (d.questions || []).map((q, i) => {
-        const bars = (q.options || []).map((o) =>
-          `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">
-             <div style="width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(o.option)}">${escapeHtml(o.option)}</div>
-             <div style="flex:1;max-width:340px;background:#fff3e8;border-radius:4px;height:16px;">
-               <div style="width:${o.pct}%;background:#ff8a3d;height:16px;border-radius:4px;"></div>
-             </div>
-             <div style="width:96px;color:#555;font-size:12px;">${o.count} 人（${o.pct}%）</div>
-           </div>`).join("") || '<div style="color:#999;font-size:13px;">暂无作答</div>';
-        return `<div style="border:1px solid #f0e0cf;border-radius:8px;padding:10px 14px;margin:8px 0;background:#fffdf9;">
-            <div style="font-weight:700;margin-bottom:4px;">${i + 1}. ${escapeHtml(q.q_title || q.q_id || "")}
-              <span style="font-weight:400;color:#999;font-size:12px;margin-left:8px;">${escapeHtml(q.q_type || "")}</span>
-            </div>
-            <div style="color:#888;font-size:13px;margin-bottom:8px;">
-              看过 <b>${q.viewers}</b> 人 · 平均停留 <b>${sec(q.avg_dwell_ms)}</b> · 作答 <b>${q.answered}</b> 人
-            </div>
-            ${bars}
-          </div>`;
-      }).join("");
-      box.innerHTML = summary + (qblocks || '<div style="color:#888;">该问卷暂无埋点数据。</div>') +
-        `<details style="margin-top:14px;"><summary style="cursor:pointer;color:#555;">原始明细表（每答卷 × 每题 × 每选项）</summary>
-           <div id="rawEventTable" style="margin-top:8px;">展开加载中…</div>
-         </details>`;
-      const det = box.querySelector("details");
-      if (det) det.addEventListener("toggle", function () { if (det.open) loadRawEventTable(sid); }, { once: true });
-    }
-    // 原始扁平明细（旧视图），按需加载
-    async function loadRawEventTable(sid) {
-      const box = document.getElementById("rawEventTable");
-      let resp;
-      try {
-        resp = await fetch(`/admin/surveys/${sid}/event-rows`, { headers: { Authorization: authHeader() } });
-      } catch (e) { box.innerHTML = "无法连接服务器"; return; }
-      if (!resp.ok) { box.innerHTML = "明细加载失败"; return; }
-      const d = await resp.json();
-      const cols = ["兑换码", "层级", "总停留", "问卷ID", "问卷名称", "问题类型", "问题ID", "问题名称",
-                    "问题选择结果", "问题停留时间", "是否提交", "UV", "PV"];
-      const head = "<tr>" + cols.map((c) => `<th>${c}</th>`).join("") + "</tr>";
-      const body = (d.rows || []).map((r) =>
-        "<tr>" + [
-          r.redeem_code || "—", r.tier_reached, sec(r.total_dwell_ms), d.survey_id, d.survey_name,
-          r.q_type || "", r.q_id || "", r.q_title || "",
-          fmtVal(r.option) || "—", sec(r.q_dwell_ms), r.submitted, d.uv, d.pv,
-        ].map((v) => `<td>${escapeHtml(v)}</td>`).join("") + "</tr>").join("");
-      box.innerHTML = (d.rows || []).length
-        ? `<div style="overflow-x:auto;"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`
-        : `<div style="color:#888;">暂无带埋点会话的数据。</div>`;
-    }
-    function escapeHtml(s) {
-      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-    async function showEvents(id) {
-      switchTab("ana");
-      const box = document.getElementById("eventDetail");
-      box.style.color = "";
-      box.innerHTML = "加载埋点详情…";
-      let resp;
-      try {
-        resp = await fetch(`/admin/submissions/${id}/events`, { headers: { Authorization: authHeader() } });
-      } catch (e) { box.innerHTML = ""; return; }
-      if (!resp.ok) { box.innerHTML = "埋点查询失败"; return; }
-      const d = await resp.json();
-      if (!d.session_id) { box.innerHTML = `该答卷无关联埋点会话。`; return; }
-      const fmtVal = (v) => Array.isArray(v) ? v.join("、") : (v == null ? "" : v);
-      const qrows = (d.questions || []).map((q) =>
-        `<tr><td>${escapeHtml(q.question_id)}</td><td>${escapeHtml(q.title || "")}</td>` +
-        `<td style="text-align:right;">${(q.dwell_ms / 1000).toFixed(1)}s</td>` +
-        `<td>${escapeHtml(fmtVal(q.value)) || "—"}</td></tr>`).join("");
-      const evrows = (d.events || []).map((e) => {
-        const parts = [];
-        if (e.question_id) parts.push("题:" + escapeHtml(e.question_title || e.question_id));
-        if (e.option && e.option !== "") parts.push("选:" + escapeHtml(e.option));
-        if (e.dwell_seconds != null) parts.push("停留:" + e.dwell_seconds + "s");
-        const p = parts.length ? " · " + parts.join(" · ") : "";
-        return `<div style="font-family:monospace;font-size:12px;color:#777;">${fmtTime(e.created_at)} · <b>${escapeHtml(e.name)}</b>${p}</div>`;
-      }).join("");
-      box.innerHTML =
-        `<h3 style="margin:6px 0;">提交 #${id} 埋点详情 · 会话 ${d.session_id} · 总停留 ${(d.dwell_ms / 1000).toFixed(1)}s</h3>
-         <table><thead><tr><th>题ID</th><th>题目</th><th>停留时长</th><th>所选选项</th></tr></thead>
-           <tbody>${qrows || `<tr><td colspan="4">无每题数据</td></tr>`}</tbody></table>
-         <details style="margin-top:10px;"><summary style="cursor:pointer;color:#555;">原始事件轨迹（${(d.events || []).length} 条）</summary>${evrows}</details>`;
-    }
-    function toggleAll(ck) {
-      document.querySelectorAll(".rowck").forEach((c) => { c.checked = ck.checked; });
-    }
-    async function batchDel() {
-      const ids = Array.from(document.querySelectorAll(".rowck:checked")).map((c) => parseInt(c.value, 10));
-      if (!ids.length) { setMsg("请先勾选要删除的记录", "#d4380d"); return; }
-      if (!confirm(`确定彻底删除选中的 ${ids.length} 条记录？删除后不可恢复。`)) return;
-      let resp;
-      try {
-        resp = await fetch("/admin/submissions/batch-delete", {
-          method: "POST",
-          headers: { Authorization: authHeader(), "Content-Type": "application/json" },
-          body: JSON.stringify({ ids }),
-        });
-      } catch (e) {
-        setMsg("无法连接服务器", "#d4380d");
-        return;
+    function applyView(){const analyticsRows=filteredRows(false),detailRows=filteredRows(true);renderAnalytics(analyticsRows);renderRows(detailRows)}
+    async function load(){
+      try{
+        const surveys=await api('/admin/surveys');
+        state.surveyId=(surveys.items||[]).find(item=>item.slug==='moody')?.id||(surveys.items||[])[0]?.id;
+        const query=state.surveyId?`?survey_id=${state.surveyId}`:'';
+        const openQuery=state.surveyId?`?survey_id=${state.surveyId}&only_unsubmitted=true`:'?only_unsubmitted=true';
+        const [submissions,opened,questions]=await Promise.all([
+          api(`/admin/submissions${query}`),api(`/admin/distributions${openQuery}`),state.surveyId?api(`/admin/surveys/${state.surveyId}/question-stats`):Promise.resolve(null)
+        ]);
+        state.rows=submissions.items||[];state.opened=opened.items||[];state.questions=questions;
+        $('#loginPanel').classList.add('hidden');$('#dashboard').classList.remove('hidden');$('#password').value='';applyView();
+      }catch(error){
+        if(error.status===401){state.auth='';$('#dashboard').classList.add('hidden');$('#loginPanel').classList.remove('hidden');$('#loginError').textContent='密码错误，请重新输入';}
+        else alert(error.message);
       }
-      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
-      if (!resp.ok) { setMsg("批量删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
-      const d = await resp.json();
-      const ckAll = document.getElementById("ckAll");
-      if (ckAll) ckAll.checked = false;
-      setMsg(`已删除 ${d.deleted} 条`, "#389e0d");
-      load();
     }
-    async function del(id) {
-      if (!confirm("确定彻底删除这条记录？删除后不可恢复。")) return;
-      let resp;
-      try {
-        resp = await fetch(`/admin/submissions/${id}`, { method: "DELETE", headers: { Authorization: authHeader() } });
-      } catch (e) {
-        setMsg("无法连接服务器", "#d4380d");
-        return;
-      }
-      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
-      if (!resp.ok) { setMsg("删除失败（HTTP " + resp.status + "）", "#d4380d"); return; }
-      load();
+    function openRedeem(id,code){selectedSubmissionId=id;$('#redeemCode').textContent=code;$('#redeemError').textContent='';$('#redeemModal').classList.remove('hidden');$('#staffName').focus()}
+    function csvCell(value){return `"${String(value??'').replace(/"/g,'""')}"`}
+    function exportCsv(){
+      const rows=filteredRows(true),header=['提交ID','数据范围','提交时间','答题时长(秒)','答卷状态','异常原因','奖品','度数','兑换码','兑奖状态'];
+      const lines=[header,...rows.map(row=>[row.id,row.is_test?'测试数据':'正式数据',time(row.created_at),(Number(row.elapsed_ms||0)/1000).toFixed(1),isValid(row)?'有效':'异常',(row.risk_flags||[]).map(value=>reasonText[value]||value).join('|'),row.prize_name||'',row.degree_label||'',row.display_code||row.redeem_code||'',statusText[row.reward_status]||row.reward_status])].map(row=>row.map(csvCell).join(','));
+      const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');
+      link.href=URL.createObjectURL(blob);link.download=`moody-survey-${new Date().toISOString().slice(0,10)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
     }
-    async function redeem(id) {
-      if (!confirm("确认工作人员已核对订单备注，现在核销该兑换码？核销后不可重复兑奖。")) return;
-      let resp;
-      try {
-        resp = await fetch(`/admin/submissions/${id}/redeem`, { method: "POST", headers: { Authorization: authHeader() } });
-      } catch (e) {
-        setMsg("无法连接服务器", "#d4380d");
-        return;
-      }
-      if (resp.status === 401) { setMsg("账号或密码错误", "#d4380d"); return; }
-      if (!resp.ok) { setMsg("核销失败（HTTP " + resp.status + "）", "#d4380d"); return; }
-      const data = await resp.json();
-      setMsg(data.already_redeemed ? "该兑换码此前已经核销，请勿重复发奖" : "核销成功，该兑换码已失效", data.already_redeemed ? "#d4380d" : "#389e0d");
-      load();
-    }
-    window.addEventListener("DOMContentLoaded", function () {
-      setMsg("请输入后台密码后点击查询。", "#666");
-    });
+    $('#cancelRedeem').onclick=()=>$('#redeemModal').classList.add('hidden');
+    $('#loginForm').onsubmit=async event=>{event.preventDefault();$('#loginError').textContent='';state.auth='Basic '+btoa(unescape(encodeURIComponent('admin:'+$('#password').value)));await load()};
+    $('#redeemForm').onsubmit=async event=>{
+      event.preventDefault();$('#redeemError').textContent='';
+      try{
+        await api(`/admin/submissions/${selectedSubmissionId}/redeem`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({staff_name:$('#staffName').value,note:$('#staffNote').value||null})});
+        $('#redeemModal').classList.add('hidden');$('#staffNote').value='';await load();
+      }catch(error){$('#redeemError').textContent=error.message}
+    };
+    $('#query').onclick=applyView;$('#refresh').onclick=load;$('#status').onchange=applyView;$('#scope').onchange=applyView;$('#days').onchange=applyView;$('#search').onkeydown=event=>{if(event.key==='Enter')applyView()};
+    $('#export').onclick=exportCsv;
+    $('#logout').onclick=()=>{state.auth='';location.reload()};
   </script>
 </body>
 </html>

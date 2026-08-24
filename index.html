@@ -255,6 +255,21 @@
       .shell .actions .next,.shell.q15 .actions .next,.shell.degree .actions .next{background:linear-gradient(180deg,#ff963c,#ff6718)!important;box-shadow:0 4px 0 #dd5b19,0 8px 15px rgba(255,121,40,.24)!important}
       .shell .actions .next:disabled,.shell.q15 .actions .next:disabled,.shell.degree .actions .next:disabled{opacity:.42!important;box-shadow:none!important}
     }
+    /* 华为折叠屏等“宽而短”的竖屏：按钮固定在可视区底部时，选项区必须提前收口，避免遮住末尾选项。 */
+    @media(max-width:768px) and (min-aspect-ratio:1/2){
+      .shell .options:not(.q7b1):not(.q15):not(.q16){
+        height:auto!important;
+        bottom:calc(50% - 40vh + var(--safe-top) + var(--safe-bottom));
+        bottom:max(16.2%,calc(50% - 40vh + var(--safe-top) + var(--safe-bottom)));
+        scroll-padding-bottom:14px;
+      }
+      @supports(height:100dvh){
+        .shell .options:not(.q7b1):not(.q15):not(.q16){
+          bottom:calc(50% - 40dvh + var(--safe-top) + var(--safe-bottom));
+          bottom:max(16.2%,calc(50% - 40dvh + var(--safe-top) + var(--safe-bottom)));
+        }
+      }
+    }
     @media(max-width:360px) and (max-height:700px){
       .shell.q6a .options{gap:6px!important}
       .shell.q6a .options:not(.q7b1):not(.q15):not(.q16)>.option:not(.placeholder){height:52px!important;min-height:52px!important;flex:0 0 52px!important}

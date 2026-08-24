@@ -60,3 +60,8 @@ class SurveyCreate(BaseModel):
 
 class BatchDeleteRequest(BaseModel):
     ids: List[int]
+
+
+class RedeemRequest(BaseModel):
+    staff_name: str = Field(min_length=1, max_length=100)
+    note: Optional[str] = Field(default=None, max_length=500)

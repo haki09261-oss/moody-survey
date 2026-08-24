@@ -85,6 +85,8 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert "body{display:block;padding:var(--safe-top)" in page.text
     assert "var(--usable-vh) * .9215" in page.text
     assert "background:linear-gradient(180deg,#ff963c,#ff6718)!important" in page.text
+    assert "@media(max-width:768px) and (min-aspect-ratio:1/2)" in page.text
+    assert "bottom:max(16.2%,calc(50% - 40dvh + var(--safe-top) + var(--safe-bottom)))" in page.text
     assert "function resetViewportScroll()" in page.text
     assert ".shell.q6a .options:not(.q7b1):not(.q15):not(.q16)>.option:not(.placeholder){height:52px!important;min-height:52px!important;flex:0 0 52px!important}" in page.text
     assert "container-type:inline-size" in page.text
@@ -215,7 +217,14 @@ def test_admin_can_find_and_idempotently_redeem_code(client, moody):
     assert found.status_code == 200
     assert len(found.json()["items"]) == 1
     submission_id = found.json()["items"][0]["id"]
-    first = client.post(f"/admin/submissions/{submission_id}/redeem", headers=headers)
+    first = client.post(
+        f"/admin/submissions/{submission_id}/redeem",
+        headers=headers,
+        json={"staff_name": "现场同事", "note": "上海快闪店"},
+    )
     second = client.post(f"/admin/submissions/{submission_id}/redeem", headers=headers)
     assert first.json() == {"id": submission_id, "status": "redeemed", "already_redeemed": False}
     assert second.json() == {"id": submission_id, "status": "redeemed", "already_redeemed": True}
+    redeemed = client.get("/admin/submissions", params={"code": created["display_code"]}, headers=headers)
+    assert redeemed.json()["items"][0]["redeemed_by"] == "现场同事"
+    assert redeemed.json()["items"][0]["redeemed_at"] is not None

@@ -11,7 +11,7 @@ from app.database import get_db
 from app.devices import describe_device
 from app.event_types import ANSWER, CLICK_TYPES, PAGE_LEAVE, PAGE_VIEW, QUESTION_DWELL_TYPES, QUESTION_VIEW
 from app.models import AdminUser, Distribution, Event, Submission, Survey
-from app.schemas import BatchDeleteRequest, SurveyCreate
+from app.schemas import BatchDeleteRequest, RedeemRequest, SurveyCreate
 from app.security import require_admin
 from app.timeutil import now_cn
 
@@ -119,6 +119,43 @@ def list_submissions(
     if min_score is not None:
         q = q.filter(Submission.risk_score >= min_score)
     rows = q.order_by(Submission.id.desc()).limit(500).all()
+    surveys = {
+        survey.id: survey
+        for survey in db.query(Survey).filter(
+            Survey.id.in_({row.survey_id for row in rows})
+        ).all()
+    } if rows else {}
+    audit_rows = (
+        db.query(Event)
+        .filter(
+            Event.event_type == "后台核销",
+            Event.question_id.in_([str(row.id) for row in rows]),
+        )
+        .order_by(Event.id.desc())
+        .all()
+    ) if rows else []
+    redemption_audits = {}
+    for audit in audit_rows:
+        redemption_audits.setdefault(audit.question_id, audit)
+
+    def answer_details(row: Submission):
+        survey = surveys.get(row.survey_id)
+        schema = (survey.schema_json if survey else []) or []
+        answers = row.answers_json or {}
+        details = []
+        for question in schema:
+            question_id = question.get("id")
+            if question_id not in answers:
+                continue
+            raw_value = answers.get(question_id)
+            values = raw_value if isinstance(raw_value, list) else [raw_value]
+            details.append({
+                "question": question.get("title") or question_id,
+                "answer_labels": [str(value) for value in values if value not in (None, "")],
+                "other_text": "",
+            })
+        return details
+
     return {"items": [
         {
             "id": r.id, "redeem_code": r.redeem_code,
@@ -131,6 +168,28 @@ def list_submissions(
             "session_id": r.session_id,
             "ua": r.ua, "device": r.device_json,
             "device_label": describe_device(r.ua, r.device_json),
+            "elapsed_ms": r.elapsed_ms or 0,
+            "answer_details": answer_details(r),
+            "prize_name": (
+                "M 系列 10 片装" if (r.tier_reached or 0) >= 2
+                else "M 系列 2 片装" if r.tier_reached else ""
+            ),
+            "degree_label": f"{r.degree}度" if r.degree else "",
+            "reward_status": (
+                "redeemed" if r.status == "redeemed"
+                else "issued" if r.status == "new"
+                else "none"
+            ),
+            "redeemed_at": (
+                redemption_audits[str(r.id)].created_at.isoformat()
+                if str(r.id) in redemption_audits and redemption_audits[str(r.id)].created_at
+                else None
+            ),
+            "redeemed_by": (
+                redemption_audits[str(r.id)].question_title
+                if str(r.id) in redemption_audits else ""
+            ),
+            "is_test": r.channel == "test",
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
         for r in rows
@@ -447,6 +506,7 @@ def reject_submission(
 @router.post("/submissions/{submission_id}/redeem")
 def redeem_submission(
     submission_id: int,
+    payload: Optional[RedeemRequest] = None,
     db: Session = Depends(get_db),
     user: AdminUser = Depends(require_admin),
 ):
@@ -459,6 +519,17 @@ def redeem_submission(
     if sub.status == "redeemed":
         return {"id": sub.id, "status": sub.status, "already_redeemed": True}
     sub.status = "redeemed"
+    db.add(Event(
+        survey_id=sub.survey_id,
+        session_id=sub.session_id,
+        fingerprint=sub.fingerprint,
+        event_type="后台核销",
+        question_id=str(sub.id),
+        question_title=payload.staff_name if payload else user.username,
+        option_value=payload.note if payload else None,
+        channel=sub.channel,
+        created_at=now_cn(),
+    ))
     db.commit()
     return {"id": sub.id, "status": sub.status, "already_redeemed": False}
 
