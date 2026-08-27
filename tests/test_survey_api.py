@@ -5,6 +5,7 @@ import pytest
 
 from app.models import Survey, Distribution
 from app.distribution import create_distribution
+from app.routers.survey import _activity_ended
 from app.timeutil import now_cn
 
 
@@ -77,6 +78,12 @@ def test_get_survey_ended_when_past_ends_at(client, db_session):
     resp = client.get("/api/s/over")
     assert resp.json()["token_status"] == "ended"
     assert resp.json()["schema"] == []
+
+
+def test_activity_end_includes_the_configured_final_second():
+    s = Survey(ends_at=datetime(2026, 8, 31, 9, 59, 59))
+    assert _activity_ended(s, datetime(2026, 8, 31, 9, 59, 59, 999999)) is False
+    assert _activity_ended(s, datetime(2026, 8, 31, 10, 0, 0)) is True
 
 
 def test_get_survey_not_started_hides_schema(client, db_session):

@@ -38,6 +38,13 @@ def _uses_moody_reward_route(schema) -> bool:
     }.issubset(options)
 
 
+def _activity_ended(survey: Survey, now: datetime) -> bool:
+    """结束时间按展示到秒的口径包含该秒，下一秒起关闭。"""
+    if not survey.ends_at:
+        return False
+    return now.replace(microsecond=0) > survey.ends_at.replace(microsecond=0)
+
+
 def _client_ip(request: Request) -> str:
     cf_ip = request.headers.get("cf-connecting-ip")
     if cf_ip:
@@ -83,7 +90,7 @@ def get_survey(
     }
 
     not_started = bool(survey.starts_at and now < survey.starts_at)
-    ended = bool(survey.ends_at and now >= survey.ends_at)
+    ended = _activity_ended(survey, now)
 
     # 活动开始前链接不可领取、不可作答，且不下发题目结构。
     if not_started:
@@ -191,7 +198,7 @@ def submit(
 
     now = now_cn()
     not_started = bool(survey.starts_at and now < survey.starts_at)
-    ended = bool(survey.ends_at and now >= survey.ends_at)
+    ended = _activity_ended(survey, now)
 
     if not_started:
         raise HTTPException(status_code=409, detail="not_started")
@@ -317,7 +324,7 @@ def upgrade(
     now = now_cn()
     if survey.starts_at and now < survey.starts_at:
         raise HTTPException(status_code=409, detail="not_started")
-    if survey.ends_at and now >= survey.ends_at:
+    if _activity_ended(survey, now):
         raise HTTPException(status_code=409, detail="ended")
 
     sub = latest_submission(db, survey.id, payload.fingerprint)
