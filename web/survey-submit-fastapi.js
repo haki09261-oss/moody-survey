@@ -12,7 +12,9 @@
   let productUrl = "https://detail.tmall.com/item.htm?id=1072972797956";
 
   const serverIds = {
-    q1: "q1", q2: "q2", q3: "q3",
+    q1: "q1", q2: "q2",
+    q3name: "q3_product_name_interest", q4feature: "q4_product_feature_interest",
+    q3: "q3",
     q4a: "q4_only", q5a: "q5_only", q6a: "q6_only",
     q4b: "q4_cycle", q5b: "q5_scene", q6b: "q6_purchase",
     q7b1: "q7_products", q8b1: "q8_purchase_reason", q9b1: "q9_other_brands", q10b1: "q10_satisfied",
@@ -250,7 +252,13 @@
         showReward(submitted.display_code, submitted.tier || 1);
         return;
       }
-      const tierOne = {q1: allAnswers.q1, q2: allAnswers.q2, q3: allAnswers.q3};
+      const tierOne = {
+        q1: allAnswers.q1,
+        q2: allAnswers.q2,
+        q3_product_name_interest: allAnswers.q3_product_name_interest,
+        q4_product_feature_interest: allAnswers.q4_product_feature_interest,
+        q3: allAnswers.q3
+      };
       await api(`/s/${SLUG}/submit`, {
         method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify(requestBody(tierOne))
       });

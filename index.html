@@ -318,6 +318,8 @@ const degree=degreeValues.map(value=>`${value}度`);
 const qs=[
  {id:'q1',t:'你通常会在什么时候戴美瞳？',m:1,o:['日常上班/上学','逛街/聚会/约会','运动/健身/户外','旅行/拍照','不想戴框架镜的时候几乎都会戴美瞳']},
  {id:'q2',t:'你戴美瞳时，最常遇到哪些不适？',m:1,max:3,o:['戴久了干涩','有异物感/磨眼','眼睛容易有红血丝','视物模糊','久看屏幕后眼睛酸胀','镜片容易滑片','基本没有不适']},
+ {id:'q3name',t:'以下哪种类型的产品名最能引起你对透明隐形眼镜的购买兴趣？',m:1,max:3,o:['佩戴感受型：欧舒适、舒润、水感','功能直述型：防蓝光、防干眼','功能概述型：双护、清氧清、水航线','技术工艺型：水梯度、泪循环','参数特点型：薄润、003','字母系列型：M系列（Moist）、B系列（Basic）','使用场景型：每日U新、睛靓每日','口语昵称型：小粉片、锁水片、海洋片']},
+ {id:'q4feature',t:'假设以下说法均经过验证，并用于同一款隐形眼镜。请问以下哪些产品特点最能吸引你进一步了解或购买？',m:1,max:3,o:['恢复眼睛自身水润力','延长泪膜破裂时间，让眼睛多2秒水润','干眼适用，降低眼表炎症发生可能性','清除自由基，对抗眼表氧化','提高泪膜稳定性，泪液更充盈','降低戴镜压力，提高戴镜水润感']},
  {id:'q3',t:'你平时戴美瞳和透明片的情况是？',o:['只戴美瞳','两种都戴，戴美瞳更多','两种都戴，戴透明片更多']},
  {id:'q4a',when:a=>a.q3?.includes(0),t:'你不戴透明片的原因是？',m:1,o:['和美瞳相比，没有修饰眼睛、完善妆容的功能','美瞳的舒适度足够，没有尝试透明片的动力','不清楚透明片和美瞳除有无花纹外有什么区别']},
  {id:'q5a',when:a=>a.q3?.includes(0),t:'如 moody 提供免费的透明片试用，你是否愿意尝试佩戴？',o:['愿意','不愿意']},
@@ -343,12 +345,12 @@ const qs=[
  {id:'degree',t:'最后一步：你的隐形眼镜度数是？',select:1,o:degree}
 ];
 let ans={},pos=0,draft=[],path=[],q7ScrollTop=0,optionScrollByQuestion={};const screen=document.querySelector('#screen'),toast=document.querySelector('#toast');
-const colorOnlyRoute=new Set(['q1','q2','q3','q4a','q5a','q6a','degree']);
+const colorOnlyRoute=new Set(['q1','q2','q3name','q4feature','q3','q4a','q5a','q6a','degree']);
 const active=()=>{const available=qs.filter(q=>!q.when||q.when(ans));return ans.q3?.includes(0)?available.filter(q=>colorOnlyRoute.has(q.id)):available};
 const routeTotal=()=>{
- if(ans.q3?.includes(0))return 7;
- if(ans.q6b?.includes(2))return 14;
- return 15;
+ if(ans.q3?.includes(0))return 9;
+ if(ans.q6b?.includes(2))return 16;
+ return 17;
 };
 function media(q){
  if(q.id==='q7b1'){const cards=[{i:0,img:'assets/q7-product-m-mobile.webp?v=20260817',name:'目怡蓝 M 系列',desc:'水润保湿 舒适日抛'},{i:1,img:'assets/q7-product-air-mobile.webp?v=20260817',name:'目怡蓝薄润系列',desc:'轻薄透气 清爽日抛'},{i:2,img:'assets/q7-product-s-mobile.webp?v=20260817',name:'目怡蓝 S 系列',desc:'锁色持久 自然放大'}];return `<div class="visual-grid series-select">${cards.map(c=>`<button class="visual-choice ${draft.includes(c.i)?'on':''}" data-i="${c.i}"><img src="${c.img}" alt="${c.name}" decoding="async"><strong>${c.name}</strong><em>${c.desc}</em><span>点击选择</span></button>`).join('')}</div>`}
@@ -465,4 +467,4 @@ function restart(){ans={};pos=0;render()}render();
     });
   };
 })();
-</script><script src="survey-submit.js?v=20260805-3"></script></body></html>
+</script><script src="survey-submit.js?v=20260827-1"></script></body></html>

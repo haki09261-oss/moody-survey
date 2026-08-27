@@ -33,11 +33,19 @@ def _claim(client, fingerprint, ip):
     return data["token"]
 
 
-def _only_answers(degree="525"):
+def _entry_answers(wear="只戴美瞳"):
     return {
         "q1": ["日常上班/上学"],
         "q2": ["戴久了干涩"],
-        "q3": "只戴美瞳",
+        "q3_product_name_interest": ["佩戴感受型：欧舒适、舒润、水感"],
+        "q4_product_feature_interest": ["恢复眼睛自身水润力"],
+        "q3": wear,
+    }
+
+
+def _only_answers(degree="525"):
+    return {
+        **_entry_answers(),
         "q4_only": ["美瞳的舒适度足够，没有尝试透明片的动力"],
         "q5_only": "愿意",
         "q6_only": "30-40元",
@@ -64,6 +72,12 @@ def _full_answers(degree="575"):
 
 def test_current_schema_contains_latest_requested_content():
     by_id = {question["id"]: question for question in SCHEMA}
+    assert list(by_id).index("q3_product_name_interest") == list(by_id).index("q2") + 1
+    assert list(by_id).index("q4_product_feature_interest") == list(by_id).index("q2") + 2
+    assert by_id["q3_product_name_interest"]["max"] == 3
+    assert by_id["q4_product_feature_interest"]["max"] == 3
+    assert "字母系列型：M系列（Moist）、B系列（Basic）" in by_id["q3_product_name_interest"]["options"]
+    assert "延长泪膜破裂时间，让眼睛多2秒水润" in by_id["q4_product_feature_interest"]["options"]
     assert "长时间通勤（如旅行、出差途中等）" in by_id["q5_scene"]["options"]
     assert "525" in by_id["q_degree"]["options"]
     assert "535" not in by_id["q_degree"]["options"]
@@ -92,7 +106,7 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert "container-type:inline-size" in page.text
     assert "font-size:clamp(14px,5.6cqw,35px)" in page.text
     assert "white-space:nowrap;user-select:all" in page.text
-    assert '<script src="survey-submit.js?v=20260805-3"></script>' in page.text
+    assert '<script src="survey-submit.js?v=20260827-1"></script>' in page.text
 
     adapter = client.get("/s/survey-submit.js")
     assert adapter.status_code == 200
@@ -102,6 +116,11 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert "打开淘宝 App？" in adapter.text
     assert "tbopen://m.taobao.com/tbopen/index.html" in adapter.text
     assert "location.assign(productUrl)" in adapter.text
+    assert 'q3name: "q3_product_name_interest"' in adapter.text
+    assert 'q4feature: "q4_product_feature_interest"' in adapter.text
+    assert "以下哪种类型的产品名最能引起你对透明隐形眼镜的购买兴趣？" in page.text
+    assert "假设以下说法均经过验证，并用于同一款隐形眼镜" in page.text
+    assert "if(ans.q3?.includes(0))return 9" in page.text
 
     artwork = client.get("/s/assets/universal-survey-background.webp")
     assert artwork.status_code == 200
@@ -131,7 +150,7 @@ def test_both_wear_path_stays_in_progress_then_returns_ten_pack(client, db_sessi
     token = _claim(client, "fp-full", "10.20.0.2")
     first = client.post("/s/moody-current/submit", headers={"CF-Connecting-IP": "10.20.0.2"}, json={
         "fingerprint": "fp-full", "token": token, "channel": "test", "elapsed_ms": 9000,
-        "answers": {"q1": ["日常上班/上学"], "q2": ["戴久了干涩"], "q3": "两种都戴，戴透明片更多"},
+        "answers": _entry_answers("两种都戴，戴透明片更多"),
     })
     assert first.status_code == 200
     assert first.json()["status"] == "in_progress"
@@ -174,9 +193,7 @@ def test_too_fast_only_path_is_flagged(client, moody):
 def test_same_option_position_pattern_is_rejected(client, moody):
     token = _claim(client, "fp-uniform-current", "10.20.0.7")
     answers = {
-        "q1": ["日常上班/上学"],
-        "q2": ["戴久了干涩"],
-        "q3": "只戴美瞳",
+        **_entry_answers(),
         "q4_only": ["和美瞳相比，没有修饰眼睛、完善妆容的功能"],
         "q5_only": "愿意",
         "q6_only": "20元及以下",
@@ -194,7 +211,7 @@ def test_q12_other_is_limited_server_side(client, moody):
     token = _claim(client, "fp-other-long", "10.20.0.5")
     client.post("/s/moody-current/submit", headers={"CF-Connecting-IP": "10.20.0.5"}, json={
         "fingerprint": "fp-other-long", "token": token, "elapsed_ms": 9000,
-        "answers": {"q1": ["日常上班/上学"], "q2": ["戴久了干涩"], "q3": "两种都戴，戴美瞳更多"},
+        "answers": _entry_answers("两种都戴，戴美瞳更多"),
     })
     answers = _full_answers()
     answers["q12_premium"] = ["其他：" + ("字" * 101)]
