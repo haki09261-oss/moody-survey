@@ -1285,12 +1285,14 @@
 
     // 页面浏览：value 记落地页类型，后台直接看到访客落在了什么页
     const landing = resumeTier2 ? "答题页(进阶续答)" : ({
+      not_started: "活动未开始页",
       ended: "活动结束页", ineligible: "无资格页", expired: "问卷已关闭页",
       used: "链接已被使用页", not_found: "链接无效页", submitted_self: "兑奖码页",
     }[data.token_status] || "答题页");
     track("page_view", { value: landing });
 
-    // 活动结束 / 无资格 / 旧链接失效
+    // 活动未开始 / 活动结束 / 无资格 / 旧链接失效
+    if (data.token_status === "not_started") { showOnlyTitle("本次活动尚未开始"); return; }
     if (data.token_status === "ended") { showOnlyTitle("本次活动已结束"); return; }
     if (data.token_status === "ineligible") { showOnlyTitle("无资格", "ineligible"); return; }
     if (data.token_status === "expired" || data.token_status === "used") {

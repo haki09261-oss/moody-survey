@@ -55,6 +55,7 @@ class SurveyCreate(BaseModel):
     schema_json: List[Dict[str, Any]]
     reward_type: str = "manual"
     new_product_url: Optional[str] = None
+    starts_at: Optional[datetime] = None
     ends_at: Optional[datetime] = None
 
 

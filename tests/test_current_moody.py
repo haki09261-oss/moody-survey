@@ -4,7 +4,7 @@ import pytest
 
 from app.models import Submission, Survey
 from app.security import ensure_seed_admin
-from scripts.seed_moody import SCHEMA
+from scripts.seed_moody import ENDS_AT, SCHEMA, STARTS_AT
 
 
 @pytest.fixture
@@ -86,6 +86,11 @@ def test_current_schema_contains_latest_requested_content():
     assert "被“高透氧”“泪循环”等产品参数/功能打动" in by_id["q8_purchase_reason"]["options"]
 
 
+def test_moody_activity_window_matches_requested_beijing_time():
+    assert STARTS_AT.isoformat(sep=" ") == "2026-08-28 10:00:00"
+    assert ENDS_AT.isoformat(sep=" ") == "2026-08-31 09:59:59"
+
+
 def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     page = client.get("/s/moody")
     assert page.status_code == 200
@@ -106,7 +111,7 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert "container-type:inline-size" in page.text
     assert "font-size:clamp(14px,5.6cqw,35px)" in page.text
     assert "white-space:nowrap;user-select:all" in page.text
-    assert '<script src="survey-submit.js?v=20260827-1"></script>' in page.text
+    assert '<script src="survey-submit.js?v=20260827-2"></script>' in page.text
 
     adapter = client.get("/s/survey-submit.js")
     assert adapter.status_code == 200
@@ -118,6 +123,7 @@ def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):
     assert "location.assign(productUrl)" in adapter.text
     assert 'q3name: "q3_product_name_interest"' in adapter.text
     assert 'q4feature: "q4_product_feature_interest"' in adapter.text
+    assert "活动将于 8 月 28 日 10:00 开放" in adapter.text
     assert "以下哪种类型的产品名最能引起你对透明隐形眼镜的购买兴趣？" in page.text
     assert "假设以下说法均经过验证，并用于同一款隐形眼镜" in page.text
     assert "if(ans.q3?.includes(0))return 9" in page.text

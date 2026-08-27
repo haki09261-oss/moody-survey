@@ -16,6 +16,7 @@ class Survey(Base):
     new_product_url = Column(String(512), nullable=True, comment="结果页「去兑奖」默认跳转地址（渠道未命中时回退）")
     channel_product_urls = Column(JSON, nullable=True, comment="按渠道配兑奖链接 {channel: url}，如 {tmall: 天猫商品, douyin: 抖店商品}；未命中回退 new_product_url")
     status = Column(String(16), default="active", comment="问卷状态：active 进行中 / closed 已关闭")
+    starts_at = Column(DateTime, nullable=True, comment="活动开始时间；到点前不可作答。空=立即开放")
     ends_at = Column(DateTime, nullable=True, comment="活动结束时间；到点后 token 失效。空=不自动失效")
     created_at = Column(DateTime, default=now_cn, comment="创建时间（北京时间）")
 

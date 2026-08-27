@@ -30,6 +30,7 @@ def create_survey(
         slug=payload.slug, title=payload.title,
         schema_json=payload.schema_json, reward_type=payload.reward_type,
         new_product_url=payload.new_product_url,
+        starts_at=payload.starts_at,
         ends_at=payload.ends_at,
     )
     db.add(survey)
@@ -41,7 +42,10 @@ def create_survey(
 @router.get("/surveys")
 def list_surveys(db: Session = Depends(get_db), user: AdminUser = Depends(require_admin)):
     rows = db.query(Survey).order_by(Survey.id.desc()).all()
-    return {"items": [{"id": r.id, "slug": r.slug, "title": r.title, "status": r.status} for r in rows]}
+    return {"items": [{
+        "id": r.id, "slug": r.slug, "title": r.title, "status": r.status,
+        "starts_at": r.starts_at, "ends_at": r.ends_at,
+    } for r in rows]}
 
 
 @router.get("/surveys/{survey_id}/stats")

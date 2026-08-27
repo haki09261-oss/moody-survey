@@ -2,6 +2,8 @@
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
+from app.campaigns import MOODY_ENDS_AT, MOODY_STARTS_AT
+
 
 def _ensure_column(engine: Engine, table: str, column: str, ddl_type: str) -> None:
     """旧库补列：table 缺 column 则 ALTER 添加；新库为幂等空操作。
@@ -48,6 +50,29 @@ def ensure_degree_column(engine: Engine) -> None:
 def ensure_ends_at_column(engine: Engine) -> None:
     """wj_surveys 表若缺 ends_at 则补列（活动结束时间，可空）。"""
     _ensure_column(engine, "wj_surveys", "ends_at", "DATETIME")
+
+
+def ensure_starts_at_column(engine: Engine) -> None:
+    """wj_surveys 表若缺 starts_at 则补列（活动开始时间，可空）。"""
+    _ensure_column(engine, "wj_surveys", "starts_at", "DATETIME")
+
+
+def ensure_moody_activity_window(engine: Engine) -> None:
+    """把本次 moody 活动时间写入现有问卷；没有该问卷时安全跳过。"""
+    inspector = inspect(engine)
+    if "wj_surveys" not in inspector.get_table_names():
+        return
+    columns = {c["name"] for c in inspector.get_columns("wj_surveys")}
+    if not {"slug", "starts_at", "ends_at"}.issubset(columns):
+        return
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE wj_surveys SET starts_at = :starts_at, ends_at = :ends_at "
+                "WHERE slug = 'moody'"
+            ),
+            {"starts_at": MOODY_STARTS_AT, "ends_at": MOODY_ENDS_AT},
+        )
 
 
 def ensure_user_code_column(engine: Engine) -> None:

@@ -222,12 +222,14 @@ def test_survey_event_rows(client, db_session, admin):
     assert all(x["q_dwell_ms"] == 5000 for x in rows if x["q_id"] == "q2")  # 提交问卷事件停留
 
 
-def test_create_survey_with_ends_at_persists(client, db_session, admin):
+def test_create_survey_with_activity_window_persists(client, db_session, admin):
     resp = client.post("/admin/surveys", auth=admin, json={
         "slug": "campaign1", "title": "活动问卷", "schema_json": [],
+        "starts_at": "2030-06-28T10:00:00",
         "ends_at": "2030-06-30T23:59:59"})
     assert resp.status_code == 201
     s = db_session.query(Survey).filter_by(slug="campaign1").one()
+    assert s.starts_at is not None and s.starts_at.day == 28
     assert s.ends_at is not None and s.ends_at.year == 2030
 
 

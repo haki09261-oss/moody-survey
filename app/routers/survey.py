@@ -82,7 +82,14 @@ def get_survey(
         "submission_status": None,
     }
 
+    not_started = bool(survey.starts_at and now < survey.starts_at)
     ended = bool(survey.ends_at and now >= survey.ends_at)
+
+    # 活动开始前链接不可领取、不可作答，且不下发题目结构。
+    if not_started:
+        base["token_status"] = "not_started"
+        base["schema"] = []
+        return base
 
     if t:
         dist = db.query(Distribution).filter_by(token=t).one_or_none()
@@ -183,8 +190,11 @@ def submit(
         raise HTTPException(status_code=404, detail="survey not found")
 
     now = now_cn()
+    not_started = bool(survey.starts_at and now < survey.starts_at)
     ended = bool(survey.ends_at and now >= survey.ends_at)
 
+    if not_started:
+        raise HTTPException(status_code=409, detail="not_started")
     if not payload.token:
         if ended:
             raise HTTPException(status_code=409, detail="ended")
@@ -305,6 +315,8 @@ def upgrade(
         raise HTTPException(status_code=404, detail="survey not found")
 
     now = now_cn()
+    if survey.starts_at and now < survey.starts_at:
+        raise HTTPException(status_code=409, detail="not_started")
     if survey.ends_at and now >= survey.ends_at:
         raise HTTPException(status_code=409, detail="ended")
 

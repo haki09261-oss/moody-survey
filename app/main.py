@@ -18,9 +18,11 @@ from app.migrations import (
     ensure_degree_column,
     ensure_ends_at_column,
     ensure_events_table_v2,
+    ensure_moody_activity_window,
     ensure_schema_slim,
     ensure_new_product_url_column,
     ensure_session_id_column,
+    ensure_starts_at_column,
     ensure_tier_reached_column,
     ensure_user_code_column,
 )
@@ -39,11 +41,13 @@ def on_startup():
     ensure_bound_aid_column(engine)
     ensure_dist_aid_unique(engine)
     ensure_degree_column(engine)
+    ensure_starts_at_column(engine)
     ensure_ends_at_column(engine)
     ensure_user_code_column(engine)
     ensure_events_table_v2(engine)
     ensure_schema_slim(engine)
     ensure_cn_time_shift(engine)  # 存量 UTC → 北京时间(+8),标记防重跑
+    ensure_moody_activity_window(engine)  # 部署重启即写入本次 moody 活动有效期
     db = SessionLocal()
     try:
         ensure_seed_admin(db, settings.admin_seed_username, settings.admin_seed_password)

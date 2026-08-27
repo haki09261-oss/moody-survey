@@ -5,6 +5,7 @@ import pytest
 
 from app.models import Survey, Distribution
 from app.distribution import create_distribution
+from app.timeutil import now_cn
 
 
 @pytest.fixture
@@ -75,6 +76,20 @@ def test_get_survey_ended_when_past_ends_at(client, db_session):
     db_session.commit()
     resp = client.get("/api/s/over")
     assert resp.json()["token_status"] == "ended"
+    assert resp.json()["schema"] == []
+
+
+def test_get_survey_not_started_hides_schema(client, db_session):
+    s = Survey(
+        slug="future", title="t",
+        schema_json=[{"id": "q1", "type": "single", "title": "q", "options": ["a"]}],
+        starts_at=now_cn() + timedelta(hours=1),
+    )
+    db_session.add(s)
+    db_session.commit()
+    resp = client.get("/api/s/future?c=test&fp=future-device")
+    assert resp.status_code == 200
+    assert resp.json()["token_status"] == "not_started"
     assert resp.json()["schema"] == []
 
 

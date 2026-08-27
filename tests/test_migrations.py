@@ -3,7 +3,9 @@ from sqlalchemy import create_engine, inspect, text
 
 from app.migrations import (
     ensure_ends_at_column,
+    ensure_moody_activity_window,
     ensure_new_product_url_column,
+    ensure_starts_at_column,
     ensure_tier_reached_column,
     ensure_user_code_column,
 )
@@ -97,6 +99,35 @@ def test_survey_ends_at_migration_adds_missing_column():
     assert "ends_at" not in _survey_columns(engine)
     ensure_ends_at_column(engine)
     assert "ends_at" in _survey_columns(engine)
+
+
+def test_survey_starts_at_migration_adds_missing_column_and_is_idempotent():
+    engine = _legacy_survey_engine()
+    assert "starts_at" not in _survey_columns(engine)
+    ensure_starts_at_column(engine)
+    ensure_starts_at_column(engine)
+    assert "starts_at" in _survey_columns(engine)
+
+
+def test_moody_activity_window_updates_existing_survey_only():
+    engine = create_engine("sqlite://")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE wj_surveys ("
+            "id INTEGER PRIMARY KEY, slug VARCHAR, starts_at DATETIME, ends_at DATETIME)"
+        ))
+        conn.execute(text("INSERT INTO wj_surveys (id, slug) VALUES (1, 'moody'), (2, 'other')"))
+    ensure_moody_activity_window(engine)
+    with engine.connect() as conn:
+        moody = conn.execute(text(
+            "SELECT starts_at, ends_at FROM wj_surveys WHERE slug = 'moody'"
+        )).one()
+        other = conn.execute(text(
+            "SELECT starts_at, ends_at FROM wj_surveys WHERE slug = 'other'"
+        )).one()
+    assert str(moody.starts_at).startswith("2026-08-28 10:00:00")
+    assert str(moody.ends_at).startswith("2026-08-31 09:59:59")
+    assert other.starts_at is None and other.ends_at is None
 
 
 def test_session_id_migration_adds_missing_column():

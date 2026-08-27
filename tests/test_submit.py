@@ -196,6 +196,21 @@ def test_submit_rejected_after_ends_at(client, db_session):
     assert resp.json()["detail"] == "ended"
 
 
+def test_submit_rejected_before_starts_at(client, db_session):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+    s = Survey(slug="future", title="t", status="active", schema_json=[
+        {"id": "q1", "type": "single", "title": "q", "options": ["a"]}],
+        starts_at=now_cn() + timedelta(hours=1))
+    db_session.add(s)
+    db_session.commit()
+    resp = client.post("/s/future/submit", json={
+        "fingerprint": "fp-x", "answers": {"q1": "a"}, "elapsed_ms": 15000,
+        "channel": "sms", "token": "whatever"})
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "not_started"
+
+
 def test_submit_without_token_rejected(client, survey):
     resp = client.post("/s/spring/submit", json=_payload())
     assert resp.status_code == 409
@@ -239,6 +254,19 @@ def test_upgrade_rejected_after_ends_at(client, db_session):
     resp = client.post("/s/endup/upgrade", json={"fingerprint": "fp-eu", "answers": {"q2": "x"}})
     assert resp.status_code == 409
     assert resp.json()["detail"] == "ended"
+
+
+def test_upgrade_rejected_before_starts_at(client, db_session):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+    s = Survey(slug="futureup", title="t", status="active", schema_json=[])
+    db_session.add(s)
+    db_session.commit()
+    s.starts_at = now_cn() + timedelta(hours=1)
+    db_session.commit()
+    resp = client.post("/s/futureup/upgrade", json={"fingerprint": "fp", "answers": {}})
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "not_started"
 
 
 def test_submit_degree_above_1000_treated_as_zero(client, db_session, survey):

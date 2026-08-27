@@ -190,6 +190,7 @@
       return data;
     }
     const blocked = {
+      not_started: ["活动尚未开始", "活动将于 8 月 28 日 10:00 开放，请到时刷新页面。"],
       ineligible: ["当前网络已参与过", "为防止重复刷奖品，每台设备和每个 IP 地址只可参与一次。"],
       invalid_submission: ["本次答卷未通过", "答卷触发了质量规则，因此没有生成可使用的兑换码。"],
       ended: ["活动已结束", "感谢关注，本次问卷活动已经结束。"],
@@ -269,6 +270,7 @@
       showReward(upgraded.display_code, upgraded.tier || 2);
     } catch (error) {
       const messages = {
+        not_started: ["活动尚未开始", "活动将于 8 月 28 日 10:00 开放，请到时刷新页面。"],
         invalid_submission: ["本次答卷未通过", "填写时间过短或答案过于规律，因此没有生成兑换码。答卷仍已保存供数据分析。"],
         already_submitted: ["本设备已参与过", "每台设备和每个 IP 地址只可参与一次。"],
         ineligible: ["当前网络已参与过", "每台设备和每个 IP 地址只可参与一次。"],

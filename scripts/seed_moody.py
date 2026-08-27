@@ -11,8 +11,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.campaigns import MOODY_ENDS_AT as ENDS_AT, MOODY_STARTS_AT as STARTS_AT
 from app.database import Base, SessionLocal, engine
 import app.models  # noqa: F401 - 注册全部 SQLAlchemy 模型
+from app.migrations import ensure_ends_at_column, ensure_starts_at_column
 from app.models import Survey
 
 
@@ -174,6 +176,8 @@ SCHEMA = [
 
 def main():
     Base.metadata.create_all(bind=engine)
+    ensure_starts_at_column(engine)
+    ensure_ends_at_column(engine)
     db = SessionLocal()
     try:
         survey = db.query(Survey).filter_by(slug=SLUG).one_or_none()
@@ -185,12 +189,15 @@ def main():
         survey.status = "active"
         survey.new_product_url = NEW_PRODUCT_URL
         survey.channel_product_urls = CHANNEL_PRODUCT_URLS
+        survey.starts_at = STARTS_AT
+        survey.ends_at = ENDS_AT
         db.commit()
         print("seeded moody: %d questions (tier1=%d, tier2=%d)" % (
             len(SCHEMA),
             sum(1 for q in SCHEMA if q.get("tier") == 1),
             sum(1 for q in SCHEMA if q.get("tier") == 2),
         ))
+        print("active window (Asia/Shanghai): %s - %s" % (STARTS_AT, ENDS_AT))
     finally:
         db.close()
 

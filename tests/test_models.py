@@ -15,13 +15,18 @@ def test_create_survey(db_session):
     assert fetched.schema_json[0]["id"] == "q1"
 
 
-def test_survey_has_ends_at_column(db_session):
+def test_survey_has_activity_window_columns(db_session):
     from datetime import datetime
     from app.models import Survey
-    s = Survey(slug="ea", title="t", schema_json=[], ends_at=datetime(2030, 1, 1))
+    s = Survey(
+        slug="ea", title="t", schema_json=[],
+        starts_at=datetime(2029, 12, 31), ends_at=datetime(2030, 1, 1),
+    )
     db_session.add(s)
     db_session.commit()
-    assert db_session.query(Survey).filter_by(slug="ea").one().ends_at.year == 2030
+    saved = db_session.query(Survey).filter_by(slug="ea").one()
+    assert saved.starts_at.year == 2029
+    assert saved.ends_at.year == 2030
 
 
 def test_distribution_has_user_code_column(db_session):
