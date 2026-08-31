@@ -126,7 +126,7 @@ def test_moody_activity_window_updates_existing_survey_only():
             "SELECT starts_at, ends_at FROM wj_surveys WHERE slug = 'other'"
         )).one()
     assert str(moody.starts_at).startswith("2026-08-28 10:00:00")
-    assert str(moody.ends_at).startswith("2026-08-31 09:59:59")
+    assert str(moody.ends_at).startswith("2026-09-30 23:59:59")
     assert other.starts_at is None and other.ends_at is None
 
 
