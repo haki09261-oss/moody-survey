@@ -4,7 +4,7 @@ import pytest
 
 from app.models import Submission, Survey
 from app.security import ensure_seed_admin
-from scripts.seed_moody import ENDS_AT, SCHEMA, STARTS_AT
+from scripts.seed_moody import ENDS_AT, SCHEMA, STARTS_AT, upsert_moody
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def _full_answers(degree="575"):
         "q9_other_brands": ["只买 moody 的透明片"],
         "q10_satisfied": ["不磨眼"],
         "q11_price": "30-40元",
-        "q12_premium": ["其他：愿意为专业服务付费"],
+        "q12_premium": ["权威性医疗背书（如与三甲医院联合研制）"],
         "q13_channel": ["小红书"],
         "q14_content": ["测评类"],
         "q_degree": degree,
@@ -89,6 +89,27 @@ def test_current_schema_contains_latest_requested_content():
 def test_moody_activity_window_matches_requested_beijing_time():
     assert STARTS_AT.isoformat(sep=" ") == "2026-08-28 10:00:00"
     assert ENDS_AT.isoformat(sep=" ") == "2026-09-30 23:59:59"
+
+
+def test_startup_upsert_refreshes_existing_moody_definition(db_session):
+    stale = Survey(
+        slug="moody",
+        title="旧问卷",
+        schema_json=[{"id": "old"}],
+        status="inactive",
+    )
+    db_session.add(stale)
+    db_session.commit()
+    original_id = stale.id
+
+    refreshed = upsert_moody(db_session)
+
+    assert refreshed.id == original_id
+    assert refreshed.status == "active"
+    assert refreshed.schema_json == SCHEMA
+    assert refreshed.starts_at == STARTS_AT
+    assert refreshed.ends_at == ENDS_AT
+    assert refreshed.new_product_url == "https://detail.tmall.com/item.htm?id=1072972797956"
 
 
 def test_moody_uses_original_visual_layout_with_fastapi_adapter(client, moody):

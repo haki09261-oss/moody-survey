@@ -29,6 +29,7 @@ from app.migrations import (
 import app.models  # noqa: F401  注册所有模型
 from app.routers import admin, survey
 from app.security import ensure_seed_admin
+from scripts.seed_moody import upsert_moody
 
 
 def on_startup():
@@ -50,6 +51,9 @@ def on_startup():
     ensure_moody_activity_window(engine)  # 部署重启即写入本次 moody 活动有效期
     db = SessionLocal()
     try:
+        # 每次部署启动都将当前题目、活动时间与站内商品链接同步到数据库。
+        # upsert 不会删除或覆盖任何既有答卷。
+        upsert_moody(db)
         ensure_seed_admin(db, settings.admin_seed_username, settings.admin_seed_password)
     finally:
         db.close()

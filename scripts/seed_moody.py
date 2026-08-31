@@ -38,6 +38,17 @@ PURCHASE_REASONS = [
     "被包装吸引",
 ]
 
+LAPSED_PURCHASE_REASONS = [
+    "出于对 moody 美瞳的喜爱及品牌信任",
+    "刷到博主种草帖后买来尝试",
+    "被“新手友好”的卖点打动",
+    "被“水润”“舒适”等佩戴感受卖点打动",
+    "被“高透氧”“泪循环”等产品参数/功能打动",
+    "大促期间凑单",
+    "价格划算",
+    "被包装吸引",
+]
+
 BRANDS_BOUGHT = [
     "强生安视优", "博士伦", "拉拜诗", "爱尔康", "库博光学", "欧舒天",
     "目立康 Miru", "海昌", "海俪恩", "卫康", "优瞳", "可啦啦",
@@ -127,14 +138,14 @@ SCHEMA = [
      "show_if": {"q": "q6_purchase", "in": ["经常买", "偶尔买"]}},
 
     {"id": "q7_lapsed_reason", "type": "multi", "tier": 2, "max": 3,
-     "title": "最初购买 moody 透明片的契机是？", "options": PURCHASE_REASONS,
+     "title": "最初购买 moody 透明片的契机是？", "options": LAPSED_PURCHASE_REASONS,
      "show_if": {"q": "q6_purchase", "in": ["曾经买过，现在不买了"]}},
     {"id": "q8_stop_reason", "type": "multi", "tier": 2,
      "title": "为什么后来不再购买了？",
      "options": ["对舒适度不满意", "发现材质更好的产品", "发现功能更丰富的产品（如防蓝光等）", "发现价格更合适的产品", "发现外包装更好看的产品", "做了近视矫正手术", "其他"],
      "show_if": {"q": "q6_purchase", "in": ["曾经买过，现在不买了"]}},
     {"id": "q9_return", "type": "multi", "tier": 2,
-     "title": "哪些改进会让你重新购买？",
+     "title": "以下哪些改进会让你重新选择购买 moody 透明片？",
      "options": ["镜片材质升级（如提高透氧等）", "舒适度提升", "增加护眼功能（如防蓝光、减轻干眼、减少眼睛酸胀等）", "价格更优惠", "外包装升级", "以上都不会", "其他"],
      "show_if": {"q": "q6_purchase", "in": ["曾经买过，现在不买了"]}},
 
@@ -155,11 +166,11 @@ SCHEMA = [
      "show_if": {"q": "q6_purchase", "in": ["从没买过"]}},
 
     {"id": "q11_price", "type": "single", "tier": 2,
-     "title": "你对日抛10片装透明隐形眼镜的价格预期是？",
+     "title": "你对日抛 10 片装透明隐形眼镜的价格预期是？",
      "options": ["20元及以下", "20-30元", "30-40元", "40-50元", "50元以上"]},
     {"id": "q12_premium", "type": "multi", "tier": 2, "max": 3, "other_max": 100,
      "title": "你愿意因为什么接受比预期更高的透明隐形眼镜价格？",
-     "options": ["权威性医疗背书（如：与三甲医院联合研制）", "突破性的材质/含水量/镜片厚度/透氧量", "由信任或熟悉的品牌推出", "与你喜欢的IP联名", "漂亮的包装设计", "其他"]},
+     "options": ["权威性医疗背书（如与三甲医院联合研制）", "突破性的材质/含水量/镜片厚度/透氧量", "由信任或熟悉的品牌推出", "与你喜欢的 IP 联名", "漂亮的包装设计", "其他"]},
     {"id": "q13_channel", "type": "multi", "tier": 2,
      "title": "你通常通过什么渠道了解隐形眼镜新品？",
      "options": ["小红书", "抖音", "淘宝/天猫", "拼多多", "京东", "朋友或家人推荐", "b站", "视频号", "线下门店", "其他"]},
@@ -174,24 +185,30 @@ SCHEMA = [
 ]
 
 
+def upsert_moody(db):
+    """将当前问卷定义幂等同步到数据库，不删除任何已有答卷。"""
+    survey = db.query(Survey).filter_by(slug=SLUG).one_or_none()
+    if survey is None:
+        survey = Survey(slug=SLUG, title=TITLE, schema_json=SCHEMA, status="active")
+        db.add(survey)
+    survey.title = TITLE
+    survey.schema_json = SCHEMA
+    survey.status = "active"
+    survey.new_product_url = NEW_PRODUCT_URL
+    survey.channel_product_urls = CHANNEL_PRODUCT_URLS
+    survey.starts_at = STARTS_AT
+    survey.ends_at = ENDS_AT
+    db.commit()
+    return survey
+
+
 def main():
     Base.metadata.create_all(bind=engine)
     ensure_starts_at_column(engine)
     ensure_ends_at_column(engine)
     db = SessionLocal()
     try:
-        survey = db.query(Survey).filter_by(slug=SLUG).one_or_none()
-        if survey is None:
-            survey = Survey(slug=SLUG, title=TITLE, schema_json=SCHEMA, status="active")
-            db.add(survey)
-        survey.title = TITLE
-        survey.schema_json = SCHEMA
-        survey.status = "active"
-        survey.new_product_url = NEW_PRODUCT_URL
-        survey.channel_product_urls = CHANNEL_PRODUCT_URLS
-        survey.starts_at = STARTS_AT
-        survey.ends_at = ENDS_AT
-        db.commit()
+        upsert_moody(db)
         print("seeded moody: %d questions (tier1=%d, tier2=%d)" % (
             len(SCHEMA),
             sum(1 for q in SCHEMA if q.get("tier") == 1),
