@@ -63,6 +63,14 @@ class BatchDeleteRequest(BaseModel):
     ids: List[int]
 
 
+class PurgeSubmissionRequest(BaseModel):
+    reason: str = Field(min_length=2, max_length=500)
+    confirm_code: str = Field(min_length=1, max_length=32)
+    purge_events: bool = True
+    release_participation: bool = True
+    force_redeemed: bool = False
+
+
 class RedeemRequest(BaseModel):
     staff_name: str = Field(min_length=1, max_length=100)
     note: Optional[str] = Field(default=None, max_length=500)

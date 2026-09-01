@@ -1,4 +1,6 @@
 # tests/test_admin.py
+import json
+
 import pytest
 
 from app.models import AdminUser, Distribution, Event, Survey, Submission
@@ -56,6 +58,32 @@ def test_list_submissions_filter_by_status(client, db_session, admin):
     assert items[0]["device"] == {"platform": "iPhone"}
 
 
+def test_list_submissions_includes_anonymous_participant_identity(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    s = Survey(slug="identity", title="t", schema_json=[])
+    db_session.add(s)
+    db_session.commit()
+    now = now_cn().replace(microsecond=0)
+    db_session.add(Distribution(
+        survey_id=s.id, channel="tmall", token="tk-identity",
+        created_at=now, expires_at=now + timedelta(hours=72),
+        bound_fingerprint="fp-identity", bound_aid="mp-anonymous-123",
+        user_code="USER1234",
+    ))
+    db_session.add(Submission(
+        survey_id=s.id, redeem_code="WJ-ID0001", channel="tmall",
+        token="tk-identity", fingerprint="fp-identity", answers_json={}, status="new",
+    ))
+    db_session.commit()
+
+    item = client.get(f"/admin/submissions?survey_id={s.id}", auth=admin).json()["items"][0]
+    assert item["participant_id"] == "mp-anonymous-123"
+    assert item["participant_code"] == "USER1234"
+    assert item["identity_type"] == "anonymous_device"
+
+
 def test_reject_submission(client, db_session, admin):
     s = Survey(slug="s1", title="t", schema_json=[])
     db_session.add(s)
@@ -73,8 +101,11 @@ def test_delete_submission(client, db_session, admin):
     s = Survey(slug="s1", title="t", schema_json=[])
     db_session.add(s)
     db_session.commit()
-    sub = Submission(survey_id=s.id, redeem_code="WJ-DDDDDD", channel="sms", answers_json={}, status="new")
+    sub = Submission(survey_id=s.id, redeem_code="WJ-DDDDDD", channel="sms", answers_json={}, status="new",
+                     session_id="delete-session")
     db_session.add(sub)
+    db_session.commit()
+    db_session.add(Event(survey_id=s.id, session_id="delete-session", event_type="页面浏览"))
     db_session.commit()
     sub_id = sub.id
 
@@ -82,11 +113,88 @@ def test_delete_submission(client, db_session, admin):
     assert resp.status_code == 200
     assert resp.json()["deleted"] is True
     assert db_session.get(Submission, sub_id) is None
+    assert db_session.query(Event).filter_by(session_id="delete-session").count() == 0
 
 
 def test_delete_submission_requires_auth(client, db_session):
     resp = client.delete("/admin/submissions/1")
     assert resp.status_code == 401
+
+
+def test_purge_submission_cleans_events_and_releases_participation(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    s = Survey(slug="purge", title="t", schema_json=[])
+    db_session.add(s)
+    db_session.commit()
+    now = now_cn().replace(microsecond=0)
+    dist = Distribution(
+        survey_id=s.id, channel="tmall", token="tk-purge",
+        created_at=now, expires_at=now + timedelta(hours=72),
+        bound_fingerprint="fp-purge", bound_aid="mp-purge", user_code="PURGE001",
+    )
+    sub = Submission(
+        survey_id=s.id, redeem_code="WJ-PURGE1", channel="tmall",
+        token="tk-purge", fingerprint="fp-purge", session_id="session-purge",
+        answers_json={"q1": "a"}, status="redeemed",
+    )
+    db_session.add_all([dist, sub])
+    db_session.commit()
+    db_session.add_all([
+        Event(survey_id=s.id, session_id="session-purge", token="tk-purge",
+              fingerprint="fp-purge", event_type="页面浏览"),
+        Event(survey_id=s.id, session_id="session-purge", token="tk-purge",
+              fingerprint="fp-purge", event_type="回答问题", question_id="q1"),
+        Event(survey_id=s.id, event_type="后台核销", question_id=str(sub.id),
+              question_title="ops1"),
+    ])
+    db_session.commit()
+    sub_id = sub.id
+
+    protected = client.post(f"/admin/submissions/{sub_id}/purge", auth=admin, json={
+        "reason": "灰度测试答卷", "confirm_code": "WJ-PURGE1",
+        "purge_events": True, "release_participation": True,
+    })
+    assert protected.status_code == 409
+    assert db_session.get(Submission, sub_id) is not None
+
+    resp = client.post(f"/admin/submissions/{sub_id}/purge", auth=admin, json={
+        "reason": "灰度测试答卷", "confirm_code": "WJ-PURGE1",
+        "purge_events": True, "release_participation": True, "force_redeemed": True,
+    })
+    assert resp.status_code == 200
+    assert resp.json()["deleted_events"] == 3
+    assert db_session.get(Submission, sub_id) is None
+    assert db_session.query(Distribution).filter_by(token="tk-purge").first() is None
+    assert db_session.query(Event).filter_by(session_id="session-purge").count() == 0
+    audit = db_session.query(Event).filter_by(event_type="后台删除答卷", question_id=str(sub_id)).one()
+    assert audit.question_title == "ops1"
+    assert json.loads(audit.option_value)["reason"] == "灰度测试答卷"
+
+
+def test_purge_submission_rejects_wrong_code_and_csr(client, db_session):
+    s = Survey(slug="purge-auth", title="t", schema_json=[])
+    csr = AdminUser(username="csr1", password_hash=hash_password("pw"), role="csr")
+    ops = AdminUser(username="ops2", password_hash=hash_password("pw"), role="ops")
+    db_session.add_all([s, csr, ops])
+    db_session.commit()
+    sub = Submission(
+        survey_id=s.id, redeem_code="WJ-PURGE2", channel="tmall",
+        answers_json={}, status="new",
+    )
+    db_session.add(sub)
+    db_session.commit()
+
+    denied = client.post(f"/admin/submissions/{sub.id}/purge", auth=("csr1", "pw"), json={
+        "reason": "测试数据", "confirm_code": "WJ-PURGE2",
+    })
+    assert denied.status_code == 403
+    wrong = client.post(f"/admin/submissions/{sub.id}/purge", auth=("ops2", "pw"), json={
+        "reason": "测试数据", "confirm_code": "WJ-WRONG1",
+    })
+    assert wrong.status_code == 409
+    assert db_session.get(Submission, sub.id) is not None
 
 
 def test_list_submissions_includes_tier(client, db_session, admin):

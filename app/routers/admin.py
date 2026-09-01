@@ -1,4 +1,5 @@
 # app/routers/admin.py
+import json
 import re
 from typing import Optional
 
@@ -11,7 +12,7 @@ from app.database import get_db
 from app.devices import describe_device
 from app.event_types import ANSWER, CLICK_TYPES, PAGE_LEAVE, PAGE_VIEW, QUESTION_DWELL_TYPES, QUESTION_VIEW
 from app.models import AdminUser, Distribution, Event, Submission, Survey
-from app.schemas import BatchDeleteRequest, RedeemRequest, SurveyCreate
+from app.schemas import BatchDeleteRequest, PurgeSubmissionRequest, RedeemRequest, SurveyCreate
 from app.security import require_admin
 from app.timeutil import now_cn
 
@@ -142,6 +143,53 @@ def list_submissions(
     for audit in audit_rows:
         redemption_audits.setdefault(audit.question_id, audit)
 
+    # 答卷本身不重复存参与标识；通过领取 token（优先）或同问卷设备指纹
+    # 关联 Distribution。bound_aid 是小程序本地匿名设备码，不是淘宝账号。
+    tokens = {row.token for row in rows if row.token}
+    fingerprints = {
+        (row.survey_id, row.fingerprint)
+        for row in rows if row.fingerprint
+    }
+    dist_conditions = []
+    if tokens:
+        dist_conditions.append(Distribution.token.in_(tokens))
+    if fingerprints:
+        dist_conditions.extend(
+            and_(
+                Distribution.survey_id == survey_id_value,
+                Distribution.bound_fingerprint == fingerprint,
+            )
+            for survey_id_value, fingerprint in fingerprints
+        )
+    distribution_rows = (
+        db.query(Distribution)
+        .filter(or_(*dist_conditions))
+        .order_by(Distribution.id.desc())
+        .all()
+    ) if dist_conditions else []
+    distributions_by_token = {
+        distribution.token: distribution
+        for distribution in distribution_rows if distribution.token
+    }
+    distributions_by_fingerprint = {}
+    for distribution in distribution_rows:
+        key = (distribution.survey_id, distribution.bound_fingerprint)
+        if distribution.bound_fingerprint and key not in distributions_by_fingerprint:
+            distributions_by_fingerprint[key] = distribution
+
+    def participant_details(row: Submission):
+        distribution = distributions_by_token.get(row.token)
+        if distribution is None and row.fingerprint:
+            distribution = distributions_by_fingerprint.get((row.survey_id, row.fingerprint))
+        return {
+            "participant_id": (
+                distribution.bound_aid if distribution and distribution.bound_aid
+                else row.fingerprint
+            ),
+            "participant_code": distribution.user_code if distribution else None,
+            "identity_type": "anonymous_device",
+        }
+
     def answer_details(row: Submission):
         survey = surveys.get(row.survey_id)
         schema = (survey.schema_json if survey else []) or []
@@ -162,6 +210,7 @@ def list_submissions(
 
     return {"items": [
         {
+            **participant_details(r),
             "id": r.id, "redeem_code": r.redeem_code,
             "display_code": build_display_code(r.redeem_code, r.tier_reached, r.degree),
             "degree": r.degree, "channel": r.channel,
@@ -551,29 +600,119 @@ def _release_participations(db: Session, subs) -> None:
         db.query(Distribution).filter(or_(*conds)).delete(synchronize_session=False)
 
 
-@router.delete("/submissions/{submission_id}")
+def _purge_submission_events(db: Session, sub: Submission) -> int:
+    """精确清除本次答卷相关埋点，避免测试数据继续污染 PV/UV/停留统计。"""
+    conds = [
+        and_(Event.event_type == "后台核销", Event.question_id == str(sub.id)),
+    ]
+    if sub.session_id:
+        conds.append(and_(
+            Event.survey_id == sub.survey_id,
+            Event.session_id == sub.session_id,
+        ))
+    if sub.token:
+        conds.append(and_(
+            Event.survey_id == sub.survey_id,
+            Event.token == sub.token,
+        ))
+    return (
+        db.query(Event)
+        .filter(or_(*conds))
+        .delete(synchronize_session=False)
+    )
+
+
+def _require_ops_for_delete(user: AdminUser) -> None:
+    if user.role != "ops":
+        raise HTTPException(status_code=403, detail="only ops can delete submissions")
+
+
+@router.post("/submissions/{submission_id}/purge")
+def purge_submission(
+    submission_id: int,
+    payload: PurgeSubmissionRequest,
+    db: Session = Depends(get_db),
+    user: AdminUser = Depends(require_admin),
+):
+    """后台受控清理单条测试答卷；保留一条不含答案/身份信息的管理员操作审计。"""
+    _require_ops_for_delete(user)
+    sub = db.get(Submission, submission_id)
+    if sub is None:
+        raise HTTPException(status_code=404, detail="submission not found")
+
+    accepted_codes = {
+        sub.redeem_code.upper(),
+        build_display_code(sub.redeem_code, sub.tier_reached, sub.degree).upper(),
+    }
+    if payload.confirm_code.strip().upper() not in accepted_codes:
+        raise HTTPException(status_code=409, detail="confirm code does not match")
+    if sub.status == "redeemed" and not payload.force_redeemed:
+        raise HTTPException(status_code=409, detail="redeemed submission requires explicit confirmation")
+    reason = payload.reason.strip()
+    if len(reason) < 2:
+        raise HTTPException(status_code=422, detail="delete reason is required")
+
+    snapshot = {
+        "submission_id": sub.id,
+        "survey_id": sub.survey_id,
+        "redeem_code": sub.redeem_code,
+        "status": sub.status,
+        "channel": sub.channel,
+        "purge_events": payload.purge_events,
+        "release_participation": payload.release_participation,
+        "reason": reason,
+    }
+    deleted_events = _purge_submission_events(db, sub) if payload.purge_events else 0
+    if payload.release_participation:
+        _release_participations(db, [sub])
+    db.delete(sub)
+    db.flush()
+    db.add(Event(
+        survey_id=snapshot["survey_id"],
+        event_type="后台删除答卷",
+        question_id=str(snapshot["submission_id"]),
+        question_title=user.username,
+        option_value=json.dumps(snapshot, ensure_ascii=False),
+        channel=snapshot["channel"],
+        created_at=now_cn(),
+    ))
+    db.commit()
+    return {
+        "id": submission_id,
+        "deleted": True,
+        "deleted_events": deleted_events,
+        "participation_released": payload.release_participation,
+    }
+
+
+@router.delete("/submissions/{submission_id}", deprecated=True)
 def delete_submission(
     submission_id: int,
     db: Session = Depends(get_db),
     user: AdminUser = Depends(require_admin),
 ):
+    _require_ops_for_delete(user)
     sub = db.get(Submission, submission_id)
     if sub is None:
         raise HTTPException(status_code=404, detail="submission not found")
+    _purge_submission_events(db, sub)
     _release_participations(db, [sub])
     db.delete(sub)
     db.commit()
     return {"id": submission_id, "deleted": True}
 
 
-@router.post("/submissions/batch-delete")
+@router.post("/submissions/batch-delete", deprecated=True)
 def batch_delete_submissions(
     payload: BatchDeleteRequest,
     db: Session = Depends(get_db),
     user: AdminUser = Depends(require_admin),
 ):
+    _require_ops_for_delete(user)
     """批量彻底删除提交记录（连带释放设备/IP 绑定）；不存在的 id 跳过，返回实际删除条数。"""
     subs = db.query(Submission).filter(Submission.id.in_(payload.ids)).all()
+    for sub in subs:
+        _purge_submission_events(db, sub)
     _release_participations(db, subs)
     deleted = (
         db.query(Submission)

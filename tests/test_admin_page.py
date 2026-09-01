@@ -9,3 +9,6 @@ def test_admin_page_uses_dashboard_layout(client):
     assert "异常原因分布" in response.text
     assert "每道题选项占比" in response.text
     assert "答卷明细与兑奖操作" in response.text
+    assert "匿名参与标识" in response.text
+    assert "删除测试答卷" in response.text
+    assert "/purge" in response.text
