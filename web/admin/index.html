@@ -18,8 +18,8 @@
     <p class="muted">仅供现场工作人员和数据管理员使用</p>
     <form id="loginForm">
       <input id="password" type="password" autocomplete="current-password" placeholder="请输入后台密码" required>
-      <button class="primary" type="submit">登录</button>
-      <p class="error" id="loginError"></p>
+      <button class="primary" id="loginButton" type="submit">登录</button>
+      <p class="error" id="loginError" aria-live="polite"></p>
     </form>
   </section>
 
@@ -81,8 +81,8 @@
 
   <script>
     const $=selector=>document.querySelector(selector);
-    const state={auth:'',surveyId:null,rows:[],opened:[],questions:null};
-    let selectedSubmissionId=null,selectedDeleteRow=null,dashboardRequestId=0;
+    const state={auth:'',surveyId:null,rows:[],summary:null,dashboardStatus:'idle',dashboardError:'',opened:[],openedStatus:'idle',questions:null,questionsStatus:'idle',searchTerm:''};
+    let selectedSubmissionId=null,selectedDeleteRow=null,dashboardRequestId=0,questionRequestId=0,openedRequestId=0,filterOperationId=0,loadOperationId=0;
     const reasonText={too_fast:'少于 5 秒',straight_line:'全部选择一致',same_answer:'答案文字一致',incomplete:'答卷不完整',TOO_FAST:'少于 5 秒',STRAIGHT_LINE:'全部选择一致',SAME_ANSWER:'答案文字一致',INCOMPLETE:'答卷不完整'};
     const statusText={valid:'有效',invalid:'异常',issued:'待兑奖',redeemed:'已核销',none:'未发码'};
     const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -90,10 +90,16 @@
     const pct=value=>`${(Number(value||0)*100).toFixed(1)}%`;
     const isValid=row=>row.status==='new'||row.status==='redeemed';
     async function api(url,options={}){
-      const response=await fetch(url,{...options,headers:{...(options.headers||{}),Authorization:state.auth}});
-      const data=await response.json().catch(()=>({}));
-      if(!response.ok)throw Object.assign(new Error(data.detail||data.error||'操作失败'),{status:response.status,data});
-      return data;
+      const controller=options.signal?null:new AbortController(),timeoutId=controller?setTimeout(()=>controller.abort(),30000):null;
+      try{
+        const response=await fetch(url,{...options,signal:options.signal||(controller&&controller.signal),headers:{...(options.headers||{}),Authorization:state.auth}});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok)throw Object.assign(new Error(data.detail||data.error||'操作失败'),{status:response.status,data});
+        return data;
+      }catch(error){
+        if(error.name==='AbortError')throw new Error('请求超时，请稍后重试');
+        throw error;
+      }finally{if(timeoutId)clearTimeout(timeoutId)}
     }
     const emptyChart=message=>`<div class="chart-empty">${esc(message)}</div>`;
     function renderBars(target,items,labelKey='label'){
@@ -105,33 +111,59 @@
       const total=[...counts.values()].reduce((sum,count)=>sum+count,0);
       return [...counts.entries()].sort((a,b)=>b[1]-a[1]).map(([label,count])=>({label,count,share:total?count/total:0}));
     }
-    function filteredRows(includeSearch=true){
-      const search=$('#search').value.trim().toUpperCase();
-      return state.rows.filter(row=>{
-        if(includeSearch&&search&&![row.id,row.display_code||row.redeem_code,row.participant_id,row.participant_code].some(value=>String(value||'').toUpperCase().includes(search)))return false;
-        return true;
-      });
-    }
-    function renderAnalytics(rows){
-      const total=rows.length,valid=rows.filter(isValid).length,invalid=total-valid,issued=rows.filter(row=>row.reward_status==='issued').length,redeemed=rows.filter(row=>row.reward_status==='redeemed').length;
-      const issuedTotal=issued+redeemed,average=total?rows.reduce((sum,row)=>sum+Number(row.elapsed_ms||0),0)/total/1000:0;
-      const metrics=[
-        ['总答卷',total,'当前筛选范围'],['有效答卷',valid,'可用于分析'],['有效率',pct(total?valid/total:0),'有效÷全部'],['异常答卷',invalid,'保留供质检'],
-        ['待兑奖',issued,'尚未核销'],['已核销',redeemed,`核销率 ${pct(issuedTotal?redeemed/issuedTotal:0)}`],['平均答题时长',`${average.toFixed(1)}秒`,'全部提交'],['打开未提交',state.opened.length,'已打开但未提交']
-      ];
-      $('#stats').innerHTML=metrics.map(([label,value,note])=>`<div class="card stat"><span class="muted">${label}</span><b class="${label.includes('率')?'metric-rate':''}">${value}</b><small>${note}</small></div>`).join('');
-      $('#freshness').textContent=`数据更新：${time(new Date().toISOString())}`;
+    function summaryFromRows(rows){
+      const total=rows.length,valid=rows.filter(isValid).length,issued=rows.filter(row=>row.reward_status==='issued').length,redeemed=rows.filter(row=>row.reward_status==='redeemed').length;
       const byDay=new Map();
       rows.slice().reverse().forEach(row=>{const date=String(row.created_at||'').slice(0,10);if(!date)return;const item=byDay.get(date)||{date,total:0,valid:0,invalid:0};item.total+=1;item[isValid(row)?'valid':'invalid']+=1;byDay.set(date,item)});
-      const timeline=[...byDay.values()].slice(-14),max=Math.max(1,...timeline.map(item=>item.total));
+      return {
+        total,valid,invalid:total-valid,issued,redeemed,
+        avg_elapsed_ms:total?rows.reduce((sum,row)=>sum+Number(row.elapsed_ms||0),0)/total:0,
+        timeline:[...byDay.values()],
+        risk_flags:frequency(rows.flatMap(row=>row.risk_flags||[]),value=>reasonText[value]||value).map(item=>({flag:item.label,...item})),
+        prizes:frequency(rows.map(row=>row.prize_name)).map(item=>({prize:item.label,...item})),
+        degrees:frequency(rows.map(row=>row.degree_label)).map(item=>({degree:item.label,...item}))
+      };
+    }
+    function matchesSearch(row,search=state.searchTerm){
+      return !search||[row.id,row.display_code||row.redeem_code,row.participant_id,row.participant_code].some(value=>String(value||'').toUpperCase().includes(search));
+    }
+    function filteredRows(includeSearch=true){
+      return includeSearch?state.rows.filter(matchesSearch):state.rows;
+    }
+    function renderAnalytics(rows){
+      if(state.dashboardStatus==='loading'||state.dashboardStatus==='error'){
+        const loading=state.dashboardStatus==='loading',message=loading?'统计数据加载中…':`统计数据加载失败：${state.dashboardError||'请稍后重试'}`;
+        $('#stats').innerHTML=`<div class="card stat" style="grid-column:1/-1"><span class="muted">${esc(message)}</span></div>`;
+        ['#timeline','#reasons','#rewards','#degrees'].forEach(target=>{$(target).innerHTML=emptyChart(message)});
+        $('#questions').innerHTML=emptyChart(loading?'逐题统计加载中…':'逐题统计暂不可用，请点击刷新重试');
+        $('#freshness').textContent=loading?'正在更新数据':'';
+        return;
+      }
+      const summary=state.summary||summaryFromRows(rows),total=Number(summary.total||0),valid=Number(summary.valid||0),invalid=Number(summary.invalid||0),issued=Number(summary.issued||0),redeemed=Number(summary.redeemed||0);
+      const issuedTotal=issued+redeemed,average=Number(summary.avg_elapsed_ms||0)/1000;
+      const openedValue=state.openedStatus==='loading'?'…':state.openedStatus==='error'?'—':state.opened.length;
+      const openedNote=state.openedStatus==='loading'?'正在加载':state.openedStatus==='error'?'加载失败，请刷新':'已打开但未提交';
+      const metrics=[
+        ['总答卷',total,'当前筛选范围'],['有效答卷',valid,'可用于分析'],['有效率',pct(total?valid/total:0),'有效÷全部'],['异常答卷',invalid,'保留供质检'],
+        ['待兑奖',issued,'尚未核销'],['已核销',redeemed,`核销率 ${pct(issuedTotal?redeemed/issuedTotal:0)}`],['平均答题时长',`${average.toFixed(1)}秒`,'全部提交'],['打开未提交',openedValue,openedNote]
+      ];
+      $('#stats').innerHTML=metrics.map(([label,value,note])=>`<div class="card stat"><span class="muted">${label}</span><b class="${label.includes('率')?'metric-rate':''}">${value}</b><small>${note}</small></div>`).join('');
+      $('#freshness').textContent=state.dashboardStatus==='loading'?'核心统计加载中…':state.dashboardStatus==='error'?'核心统计加载失败，请重试':`数据更新：${time(new Date().toISOString())}`;
+      const timeline=(summary.timeline||[]).slice(-14),max=Math.max(1,...timeline.map(item=>item.total));
       $('#timeline').innerHTML=timeline.length?`<div class="timeline">${timeline.map(item=>`<div class="day-column" title="${item.date}：共 ${item.total}，有效 ${item.valid}，异常 ${item.invalid}"><div class="day-stack"><i class="day-invalid" style="height:${item.invalid/max*100}%"></i><i class="day-valid" style="height:${item.valid/max*100}%"></i></div><span class="day-label">${item.date.slice(5)}</span></div>`).join('')}</div><div class="legend"><span><i style="background:#4eb28f"></i>有效</span><span><i style="background:#e98174"></i>异常</span></div>`:emptyChart('当前范围暂无答卷趋势');
-      renderBars('#reasons',frequency(rows.flatMap(row=>row.risk_flags||[]),value=>reasonText[value]||value));
-      renderBars('#rewards',frequency(rows.map(row=>row.prize_name)));
-      renderBars('#degrees',frequency(rows.map(row=>row.degree_label)));
+      renderBars('#reasons',(summary.risk_flags||[]).map(item=>({label:reasonText[item.flag]||item.flag||item.label,count:item.count,share:item.share})));
+      renderBars('#rewards',(summary.prizes||[]).map(item=>({label:item.prize||item.label,count:item.count,share:item.share})));
+      renderBars('#degrees',(summary.degrees||[]).map(item=>({label:item.degree||item.label,count:item.count,share:item.share})));
+      if(state.questionsStatus==='loading'){$('#questions').innerHTML=emptyChart('逐题统计加载中…');return}
+      if(state.questionsStatus==='error'){$('#questions').innerHTML=emptyChart('逐题统计加载失败，请点击刷新重试');return}
       const questionData=(state.questions?.questions||[]).map(question=>({question:question.q_title||question.q_id,respondents:question.answered,options:(question.options||[]).map(option=>({label:option.option,count:option.count,share:question.answered?option.count/question.answered:0}))}));
       $('#questions').innerHTML=questionData.length?questionData.map((question,index)=>`<details class="question-block" ${index<3?'open':''}><summary>${esc(question.question)} <span class="muted">（${question.respondents}人）</span></summary><div class="bar-list">${question.options.map(option=>`<div class="bar-row"><span class="bar-label" title="${esc(option.label)}">${esc(option.label)}</span><span class="bar-track"><i class="bar-fill" style="width:${Math.max(1,option.share*100)}%"></i></span><span class="bar-value">${option.count} · ${pct(option.share)}</span></div>`).join('')}</div></details>`).join(''):emptyChart('当前范围暂无可汇总的题目回答');
     }
     function renderRows(rows){
+      if(state.dashboardStatus!=='ready'){
+        $('#rows').innerHTML='';$('#empty').textContent=state.dashboardStatus==='loading'?'答卷明细加载中…':'答卷明细加载失败，请点击刷新重试';$('#empty').classList.remove('hidden');return;
+      }
+      $('#empty').textContent='暂时没有符合条件的数据';
       const visible=rows.slice(0,100);
       $('#empty').classList.toggle('hidden',visible.length>0);
       $('#rows').innerHTML=visible.map(row=>{
@@ -159,36 +191,85 @@
       if(days!=='all')params.set('days',days);
       return params.toString();
     }
+    function dataQuery(includeListLimit=false){
+      const params=new URLSearchParams(questionStatsQuery());
+      if(state.surveyId)params.set('survey_id',state.surveyId);
+      if(includeListLimit)params.set('limit','100');
+      return params.toString();
+    }
+    async function fetchSummary(query){
+      try{return await api(`/admin/submissions/summary${query?'?'+query:''}`)}
+      catch(error){
+        if(error.status!==404)throw error;
+        const fallback=await api(`/admin/submissions${query?'?'+query:''}`);
+        return summaryFromRows(fallback.items||[]);
+      }
+    }
     async function refreshDashboardData(){
       const requestId=++dashboardRequestId,filterQuery=questionStatsQuery(),submissionParams=new URLSearchParams(filterQuery);
       if(state.surveyId)submissionParams.set('survey_id',state.surveyId);
+      const summaryQuery=submissionParams.toString();
+      if(!state.searchTerm)submissionParams.set('limit','100');
       const submissionQuery=submissionParams.toString();
-      const [submissions,questions]=await Promise.all([
-        api(`/admin/submissions${submissionQuery?'?'+submissionQuery:''}`),
-        state.surveyId?api(`/admin/surveys/${state.surveyId}/question-stats${filterQuery?'?'+filterQuery:''}`):Promise.resolve(null)
+      const [submissions,summary]=await Promise.all([
+        api(`/admin/submissions?${submissionQuery}`),fetchSummary(summaryQuery)
       ]);
       if(requestId!==dashboardRequestId)return false;
-      state.rows=submissions.items||[];state.questions=questions;
+      state.rows=submissions.items||[];state.summary=summary;state.dashboardStatus='ready';state.dashboardError='';
       return true;
     }
+    async function refreshQuestionStats(){
+      const requestId=++questionRequestId,filterQuery=questionStatsQuery();
+      state.questions=null;state.questionsStatus='loading';applyView();
+      if(!state.surveyId){state.questionsStatus='ready';applyView();return}
+      try{
+        const questions=await api(`/admin/surveys/${state.surveyId}/question-stats${filterQuery?'?'+filterQuery:''}`);
+        if(requestId!==questionRequestId)return;
+        state.questions=questions;state.questionsStatus='ready';applyView();
+      }catch(error){
+        if(requestId!==questionRequestId)return;
+        state.questionsStatus='error';applyView();
+      }
+    }
+    async function refreshOpened(){
+      const requestId=++openedRequestId,openQuery=state.surveyId?`?survey_id=${state.surveyId}&only_unsubmitted=true`:'?only_unsubmitted=true';
+      state.openedStatus='loading';applyView();
+      try{
+        const opened=await api(`/admin/distributions${openQuery}`);
+        if(requestId!==openedRequestId)return;
+        state.opened=opened.items||[];state.openedStatus='ready';applyView();
+      }catch(error){
+        if(requestId!==openedRequestId)return;
+        state.openedStatus='error';applyView();
+      }
+    }
     async function applyFilters(){
-      try{if(await refreshDashboardData())applyView()}
-      catch(error){alert(error.message)}
+      const operationId=++filterOperationId;loadOperationId+=1;
+      const button=$('#query');button.disabled=true;button.textContent='查询中…';
+      state.searchTerm=$('#search').value.trim().toUpperCase();
+      questionRequestId+=1;state.rows=[];state.summary=null;state.dashboardStatus='loading';state.dashboardError='';state.questions=null;state.questionsStatus='loading';applyView();
+      const refreshPromise=refreshDashboardData(),requestId=dashboardRequestId;
+      try{if(await refreshPromise&&operationId===filterOperationId){applyView();void refreshQuestionStats();void refreshOpened()}}
+      catch(error){if(operationId===filterOperationId&&requestId===dashboardRequestId){state.dashboardStatus='error';state.dashboardError=error.message;state.questionsStatus='error';applyView();alert(error.message)}}
+      finally{if(operationId===filterOperationId){button.disabled=false;button.textContent='查询'}}
     }
     async function load(){
+      const operationId=++loadOperationId;filterOperationId+=1;dashboardRequestId+=1;
+      const queryButton=$('#query');queryButton.disabled=false;queryButton.textContent='查询';
+      questionRequestId+=1;openedRequestId+=1;state.rows=[];state.summary=null;state.dashboardStatus='loading';state.dashboardError='';state.questionsStatus='loading';state.openedStatus='loading';applyView();
       try{
         const surveys=await api('/admin/surveys');
+        if(operationId!==loadOperationId)return;
         state.surveyId=(surveys.items||[]).find(item=>item.slug==='moody')?.id||(surveys.items||[])[0]?.id;
-        const openQuery=state.surveyId?`?survey_id=${state.surveyId}&only_unsubmitted=true`:'?only_unsubmitted=true';
-        const [dataReady,opened]=await Promise.all([
-          refreshDashboardData(),api(`/admin/distributions${openQuery}`)
-        ]);
-        if(!dataReady)return;
-        state.opened=opened.items||[];
+        const dataReady=await refreshDashboardData();
+        if(operationId!==loadOperationId||!dataReady)return;
         $('#loginPanel').classList.add('hidden');$('#dashboard').classList.remove('hidden');$('#password').value='';applyView();
+        void refreshQuestionStats();void refreshOpened();
       }catch(error){
+        if(operationId!==loadOperationId)return;
         if(error.status===401){state.auth='';$('#dashboard').classList.add('hidden');$('#loginPanel').classList.remove('hidden');$('#loginError').textContent='密码错误，请重新输入';}
-        else alert(error.message);
+        else if(!$('#loginPanel').classList.contains('hidden')){$('#loginError').textContent=`登录后加载失败：${error.message}，请稍后重试`;}
+        else{state.dashboardStatus='error';state.dashboardError=error.message;applyView();alert(error.message)}
       }
     }
     function openRedeem(id,code){selectedSubmissionId=id;$('#redeemCode').textContent=code;$('#redeemError').textContent='';$('#redeemModal').classList.remove('hidden');$('#staffName').focus()}
@@ -200,15 +281,23 @@
       $('#deleteModal').classList.remove('hidden');$('#deleteReason').focus();
     }
     function csvCell(value){return `"${String(value??'').replace(/"/g,'""')}"`}
-    function exportCsv(){
-      const rows=filteredRows(true),header=['提交ID','数据范围','提交时间','答题时长(秒)','答卷状态','异常原因','匿名参与标识','参与核对码','奖品','度数','兑换码','兑奖状态'];
-      const lines=[header,...rows.map(row=>[row.id,row.is_test?'测试数据':'正式数据',time(row.created_at),(Number(row.elapsed_ms||0)/1000).toFixed(1),isValid(row)?'有效':'异常',(row.risk_flags||[]).map(value=>reasonText[value]||value).join('|'),row.participant_id||'',row.participant_code||'',row.prize_name||'',row.degree_label||'',row.display_code||row.redeem_code||'',statusText[row.reward_status]||row.reward_status])].map(row=>row.map(csvCell).join(','));
-      const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');
-      link.href=URL.createObjectURL(blob);link.download=`moody-survey-${new Date().toISOString().slice(0,10)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+    async function exportCsv(){
+      const button=$('#export'),label=button.textContent;button.disabled=true;button.textContent='导出中…';
+      try{
+        const search=$('#search').value.trim().toUpperCase(),query=dataQuery(false),result=await api(`/admin/submissions${query?'?'+query:''}`),rows=(result.items||[]).filter(row=>matchesSearch(row,search)),header=['提交ID','数据范围','提交时间','答题时长(秒)','答卷状态','异常原因','匿名参与标识','参与核对码','奖品','度数','兑换码','兑奖状态'];
+        const lines=[header,...rows.map(row=>[row.id,row.is_test?'测试数据':'正式数据',time(row.created_at),(Number(row.elapsed_ms||0)/1000).toFixed(1),isValid(row)?'有效':'异常',(row.risk_flags||[]).map(value=>reasonText[value]||value).join('|'),row.participant_id||'',row.participant_code||'',row.prize_name||'',row.degree_label||'',row.display_code||row.redeem_code||'',statusText[row.reward_status]||row.reward_status])].map(row=>row.map(csvCell).join(','));
+        const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');
+        link.href=URL.createObjectURL(blob);link.download=`moody-survey-${new Date().toISOString().slice(0,10)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+      }catch(error){alert(`导出失败：${error.message}`)}
+      finally{button.disabled=false;button.textContent=label}
     }
     $('#cancelRedeem').onclick=()=>$('#redeemModal').classList.add('hidden');
     $('#cancelDelete').onclick=()=>$('#deleteModal').classList.add('hidden');
-    $('#loginForm').onsubmit=async event=>{event.preventDefault();$('#loginError').textContent='';state.auth='Basic '+btoa(unescape(encodeURIComponent('admin:'+$('#password').value)));await load()};
+    $('#loginForm').onsubmit=async event=>{
+      event.preventDefault();const button=$('#loginButton');$('#loginError').textContent='';button.disabled=true;button.textContent='正在登录并加载…';
+      state.auth='Basic '+btoa(unescape(encodeURIComponent('admin:'+$('#password').value)));
+      try{await load()}finally{button.disabled=false;button.textContent='登录'}
+    };
     $('#redeemForm').onsubmit=async event=>{
       event.preventDefault();$('#redeemError').textContent='';
       try{
@@ -229,7 +318,7 @@
         $('#deleteError').textContent=messages[error.message]||error.message;
       }
     };
-    $('#query').onclick=applyFilters;$('#refresh').onclick=load;$('#status').onchange=applyFilters;$('#scope').onchange=applyFilters;$('#days').onchange=applyFilters;$('#search').onkeydown=event=>{if(event.key==='Enter')applyView()};
+    $('#query').onclick=applyFilters;$('#refresh').onclick=async()=>{const button=$('#refresh'),label=button.textContent;button.disabled=true;button.textContent='刷新中…';try{await load()}finally{button.disabled=false;button.textContent=label}};$('#status').onchange=applyFilters;$('#scope').onchange=applyFilters;$('#days').onchange=applyFilters;$('#search').onkeydown=event=>{if(event.key==='Enter')applyFilters()};
     $('#export').onclick=exportCsv;
     $('#logout').onclick=()=>{state.auth='';location.reload()};
   </script>

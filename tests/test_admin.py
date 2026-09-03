@@ -97,6 +97,132 @@ def test_list_submissions_returns_all_over_500_and_supports_pagination(client, d
     assert page["items"][0]["id"] == submissions[-101].id
 
 
+def test_submission_summary_uses_full_cohort_with_limited_detail_page(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    survey = Survey(slug="summary-large", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.commit()
+    now = now_cn().replace(microsecond=0)
+    submissions = []
+    for index in range(803):
+        if index < 790:
+            status = "new"
+        elif index < 795:
+            status = "redeemed"
+        else:
+            status = "flagged"
+        submissions.append(Submission(
+            survey_id=survey.id,
+            redeem_code=f"WJ-{index:06d}",
+            channel="test" if index < 3 else "tmall",
+            answers_json={},
+            status=status,
+            elapsed_ms=1000,
+            risk_flags=(
+                ["too_fast", "uniform_answers"] if index >= 799
+                else ["too_fast"] if index >= 795
+                else []
+            ),
+            tier_reached=2 if index % 2 == 0 else 1,
+            degree=100 if index % 3 == 0 else 200,
+            created_at=now - timedelta(days=20) if index == 0 else now,
+        ))
+    db_session.add_all(submissions)
+    db_session.commit()
+
+    detail = client.get(
+        f"/admin/submissions?survey_id={survey.id}&limit=100", auth=admin,
+    )
+    assert detail.status_code == 200
+    assert detail.json()["total"] == 803
+    assert len(detail.json()["items"]) == 100
+
+    response = client.get(
+        f"/admin/submissions/summary?survey_id={survey.id}", auth=admin,
+    )
+    assert response.status_code == 200
+    summary = response.json()
+    assert summary["total"] == 803
+    assert summary["valid"] == 795
+    assert summary["invalid"] == 8
+    assert summary["issued"] == 790
+    assert summary["redeemed"] == 5
+    assert summary["avg_elapsed_ms"] == 1000
+    assert summary["timeline"] == [
+        {
+            "date": (now - timedelta(days=20)).date().isoformat(),
+            "total": 1, "valid": 1, "invalid": 0,
+        },
+        {
+            "date": now.date().isoformat(), "total": 802, "valid": 794, "invalid": 8,
+        },
+    ]
+    assert summary["risk_flags"] == [
+        {"flag": "too_fast", "count": 8, "share": 0.6667},
+        {"flag": "uniform_answers", "count": 4, "share": 0.3333},
+    ]
+    assert summary["prizes"] == [
+        {"prize": "M 系列 10 片装", "count": 402, "share": 0.5006},
+        {"prize": "M 系列 2 片装", "count": 401, "share": 0.4994},
+    ]
+    assert summary["degrees"] == [
+        {"degree": "200度", "count": 535, "share": 0.6663},
+        {"degree": "100度", "count": 268, "share": 0.3337},
+    ]
+
+    invalid = client.get(
+        f"/admin/submissions/summary?survey_id={survey.id}&status=invalid", auth=admin,
+    ).json()
+    assert invalid["total"] == invalid["invalid"] == 8
+    assert invalid["valid"] == invalid["issued"] == invalid["redeemed"] == 0
+    assert invalid["timeline"][0]["total"] == 8
+
+    test_scope = client.get(
+        f"/admin/submissions/summary?survey_id={survey.id}&scope=test", auth=admin,
+    ).json()
+    assert test_scope["total"] == 3
+    assert [day["total"] for day in test_scope["timeline"]] == [1, 2]
+
+    recent = client.get(
+        f"/admin/submissions/summary?survey_id={survey.id}&days=7", auth=admin,
+    ).json()
+    assert recent["total"] == 802
+    assert recent["timeline"][0]["total"] == 802
+
+
+def test_submission_summary_timeline_returns_latest_fourteen_active_dates(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    survey = Survey(slug="summary-timeline", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.commit()
+    today = now_cn().replace(hour=12, minute=0, second=0, microsecond=0)
+    db_session.add_all([
+        Submission(
+            survey_id=survey.id,
+            redeem_code=f"WJ-TL{index:04d}",
+            channel="tmall",
+            answers_json={},
+            status="flagged" if index % 2 else "new",
+            created_at=today - timedelta(days=index * 2),
+        )
+        for index in range(15)
+    ])
+    db_session.commit()
+
+    summary = client.get(
+        f"/admin/submissions/summary?survey_id={survey.id}", auth=admin,
+    ).json()
+    assert summary["total"] == 15
+    assert len(summary["timeline"]) == 14
+    assert summary["timeline"][0]["date"] == (today - timedelta(days=26)).date().isoformat()
+    assert summary["timeline"][-1]["date"] == today.date().isoformat()
+    assert all(day["total"] == 1 for day in summary["timeline"])
+
+
 def test_list_submissions_includes_anonymous_participant_identity(client, db_session, admin):
     from datetime import timedelta
     from app.timeutil import now_cn

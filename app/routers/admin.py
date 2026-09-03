@@ -5,7 +5,7 @@ from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session
 
 from app.codes import build_display_code
@@ -54,6 +54,43 @@ def _filter_submissions(q, status: Optional[str], scope: Optional[str], days: Op
             raise HTTPException(status_code=422, detail="days must be 'all' or a positive integer")
         q = q.filter(Submission.created_at >= now_cn() - timedelta(days=day_count))
     return q
+
+
+def _submission_query(
+    db: Session,
+    survey_id: Optional[int] = None,
+    channel: Optional[str] = None,
+    status: Optional[str] = None,
+    scope: Optional[str] = None,
+    days: Optional[str] = None,
+    code: Optional[str] = None,
+    min_score: Optional[int] = None,
+):
+    """Build the shared dashboard cohort without loading submission payloads."""
+    q = db.query(Submission)
+    if survey_id is not None:
+        q = q.filter(Submission.survey_id == survey_id)
+    if channel:
+        q = q.filter(Submission.channel == channel)
+    q = _filter_submissions(q, status, scope, days)
+    if code:
+        match = re.search(r"WJ-[0-9A-Z]{6}", code.upper())
+        q = q.filter(Submission.redeem_code == (match.group(0) if match else code.strip().upper()))
+    if min_score is not None:
+        q = q.filter(Submission.risk_score >= min_score)
+    return q
+
+
+def _with_distribution_shares(items, label_key):
+    denominator = sum(item["count"] for item in items)
+    return [
+        {
+            label_key: item[label_key],
+            "count": item["count"],
+            "share": round(item["count"] / denominator, 4) if denominator else 0,
+        }
+        for item in sorted(items, key=lambda item: (-item["count"], str(item[label_key])))
+    ]
 
 
 @router.post("/surveys", status_code=201)
@@ -152,17 +189,9 @@ def list_submissions(
     db: Session = Depends(get_db),
     user: AdminUser = Depends(require_admin),
 ):
-    q = db.query(Submission)
-    if survey_id is not None:
-        q = q.filter(Submission.survey_id == survey_id)
-    if channel:
-        q = q.filter(Submission.channel == channel)
-    q = _filter_submissions(q, status, scope, days)
-    if code:
-        match = re.search(r"WJ-[0-9A-Z]{6}", code.upper())
-        q = q.filter(Submission.redeem_code == (match.group(0) if match else code.strip().upper()))
-    if min_score is not None:
-        q = q.filter(Submission.risk_score >= min_score)
+    q = _submission_query(
+        db, survey_id, channel, status, scope, days, code, min_score,
+    )
     total = q.count()
     page = q.order_by(Submission.id.desc()).offset(offset)
     if limit is not None:
@@ -296,6 +325,120 @@ def list_submissions(
         }
         for r in rows
     ], "total": total, "offset": offset, "limit": limit}
+
+
+@router.get("/submissions/summary")
+def submission_summary(
+    survey_id: Optional[int] = None,
+    channel: Optional[str] = None,
+    status: Optional[str] = None,
+    scope: Optional[str] = None,
+    days: Optional[str] = None,
+    code: Optional[str] = None,
+    min_score: Optional[int] = None,
+    db: Session = Depends(get_db),
+    user: AdminUser = Depends(require_admin),
+):
+    """Return complete-cohort dashboard aggregates without heavy detail rows."""
+    q = _submission_query(
+        db, survey_id, channel, status, scope, days, code, min_score,
+    )
+    valid_case = case((Submission.status.in_(_VALID_SUBMISSION_STATUSES), 1), else_=0)
+    total, valid, issued, redeemed, elapsed_total = q.with_entities(
+        func.count(Submission.id),
+        func.sum(valid_case),
+        func.sum(case((Submission.status == "new", 1), else_=0)),
+        func.sum(case((Submission.status == "redeemed", 1), else_=0)),
+        func.sum(func.coalesce(Submission.elapsed_ms, 0)),
+    ).one()
+    total = int(total or 0)
+    valid = int(valid or 0)
+    issued = int(issued or 0)
+    redeemed = int(redeemed or 0)
+    elapsed_total = int(elapsed_total or 0)
+    invalid = total - valid
+    avg_elapsed_ms = round(elapsed_total / total) if total else 0
+
+    day_expression = func.date(Submission.created_at)
+    timeline_rows = (
+        q.with_entities(
+            day_expression.label("day"),
+            func.count(Submission.id).label("total"),
+            func.sum(valid_case).label("valid"),
+        )
+        .group_by(day_expression)
+        .order_by(day_expression.desc())
+        .limit(14)
+        .all()
+    )
+    timeline = []
+    for day, day_total, day_valid in reversed(timeline_rows):
+        day_text = day.isoformat() if hasattr(day, "isoformat") else str(day)
+        day_total = int(day_total or 0)
+        day_valid = int(day_valid or 0)
+        timeline.append({
+            "date": day_text,
+            "total": day_total,
+            "valid": day_valid,
+            "invalid": day_total - day_valid,
+        })
+
+    risk_counts = {}
+    for (raw_flags,) in q.with_entities(Submission.risk_flags).all():
+        flags = raw_flags if isinstance(raw_flags, (list, tuple, set)) else [raw_flags]
+        for flag in flags:
+            if flag in (None, ""):
+                continue
+            flag_text = str(flag)
+            risk_counts[flag_text] = risk_counts.get(flag_text, 0) + 1
+    risk_flags = _with_distribution_shares(
+        [{"flag": flag, "count": count} for flag, count in risk_counts.items()],
+        "flag",
+    )
+
+    prize_counts = {}
+    for tier, count in (
+        q.with_entities(Submission.tier_reached, func.count(Submission.id))
+        .group_by(Submission.tier_reached)
+        .all()
+    ):
+        prize = (
+            "M 系列 10 片装" if (tier or 0) >= 2
+            else "M 系列 2 片装" if tier else ""
+        )
+        if prize:
+            prize_counts[prize] = prize_counts.get(prize, 0) + int(count or 0)
+    prizes = _with_distribution_shares(
+        [{"prize": prize, "count": count} for prize, count in prize_counts.items()],
+        "prize",
+    )
+
+    degree_counts = {}
+    for degree, count in (
+        q.filter(Submission.degree.isnot(None), Submission.degree != 0)
+        .with_entities(Submission.degree, func.count(Submission.id))
+        .group_by(Submission.degree)
+        .all()
+    ):
+        label = f"{degree}度"
+        degree_counts[label] = degree_counts.get(label, 0) + int(count or 0)
+    degrees = _with_distribution_shares(
+        [{"degree": degree, "count": count} for degree, count in degree_counts.items()],
+        "degree",
+    )
+
+    return {
+        "total": total,
+        "valid": valid,
+        "invalid": invalid,
+        "issued": issued,
+        "redeemed": redeemed,
+        "avg_elapsed_ms": avg_elapsed_ms,
+        "timeline": timeline,
+        "risk_flags": risk_flags,
+        "prizes": prizes,
+        "degrees": degrees,
+    }
 
 
 @router.get("/distributions")
