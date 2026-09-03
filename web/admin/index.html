@@ -82,7 +82,7 @@
   <script>
     const $=selector=>document.querySelector(selector);
     const state={auth:'',surveyId:null,rows:[],opened:[],questions:null};
-    let selectedSubmissionId=null,selectedDeleteRow=null;
+    let selectedSubmissionId=null,selectedDeleteRow=null,dashboardRequestId=0;
     const reasonText={too_fast:'少于 5 秒',straight_line:'全部选择一致',same_answer:'答案文字一致',incomplete:'答卷不完整',TOO_FAST:'少于 5 秒',STRAIGHT_LINE:'全部选择一致',SAME_ANSWER:'答案文字一致',INCOMPLETE:'答卷不完整'};
     const statusText={valid:'有效',invalid:'异常',issued:'待兑奖',redeemed:'已核销',none:'未发码'};
     const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -106,14 +106,8 @@
       return [...counts.entries()].sort((a,b)=>b[1]-a[1]).map(([label,count])=>({label,count,share:total?count/total:0}));
     }
     function filteredRows(includeSearch=true){
-      const status=$('#status').value,scope=$('#scope').value,days=$('#days').value,search=$('#search').value.trim().toUpperCase();
-      const cutoff=days==='all'?null:new Date(Date.now()-Number(days)*86400000);
+      const search=$('#search').value.trim().toUpperCase();
       return state.rows.filter(row=>{
-        if(status==='valid'&&!isValid(row))return false;
-        if(status==='invalid'&&isValid(row))return false;
-        if(scope==='formal'&&row.is_test)return false;
-        if(scope==='test'&&!row.is_test)return false;
-        if(cutoff&&new Date(row.created_at)<cutoff)return false;
         if(includeSearch&&search&&![row.id,row.display_code||row.redeem_code,row.participant_id,row.participant_code].some(value=>String(value||'').toUpperCase().includes(search)))return false;
         return true;
       });
@@ -158,16 +152,39 @@
       document.querySelectorAll('.delete-btn').forEach(button=>button.onclick=()=>openDelete(Number(button.dataset.id)));
     }
     function applyView(){const analyticsRows=filteredRows(false),detailRows=filteredRows(true);renderAnalytics(analyticsRows);renderRows(detailRows)}
+    function questionStatsQuery(){
+      const params=new URLSearchParams(),status=$('#status').value,scope=$('#scope').value,days=$('#days').value;
+      if(status)params.set('status',status);
+      if(scope!=='all')params.set('scope',scope);
+      if(days!=='all')params.set('days',days);
+      return params.toString();
+    }
+    async function refreshDashboardData(){
+      const requestId=++dashboardRequestId,filterQuery=questionStatsQuery(),submissionParams=new URLSearchParams(filterQuery);
+      if(state.surveyId)submissionParams.set('survey_id',state.surveyId);
+      const submissionQuery=submissionParams.toString();
+      const [submissions,questions]=await Promise.all([
+        api(`/admin/submissions${submissionQuery?'?'+submissionQuery:''}`),
+        state.surveyId?api(`/admin/surveys/${state.surveyId}/question-stats${filterQuery?'?'+filterQuery:''}`):Promise.resolve(null)
+      ]);
+      if(requestId!==dashboardRequestId)return false;
+      state.rows=submissions.items||[];state.questions=questions;
+      return true;
+    }
+    async function applyFilters(){
+      try{if(await refreshDashboardData())applyView()}
+      catch(error){alert(error.message)}
+    }
     async function load(){
       try{
         const surveys=await api('/admin/surveys');
         state.surveyId=(surveys.items||[]).find(item=>item.slug==='moody')?.id||(surveys.items||[])[0]?.id;
-        const query=state.surveyId?`?survey_id=${state.surveyId}`:'';
         const openQuery=state.surveyId?`?survey_id=${state.surveyId}&only_unsubmitted=true`:'?only_unsubmitted=true';
-        const [submissions,opened,questions]=await Promise.all([
-          api(`/admin/submissions${query}`),api(`/admin/distributions${openQuery}`),state.surveyId?api(`/admin/surveys/${state.surveyId}/question-stats`):Promise.resolve(null)
+        const [dataReady,opened]=await Promise.all([
+          refreshDashboardData(),api(`/admin/distributions${openQuery}`)
         ]);
-        state.rows=submissions.items||[];state.opened=opened.items||[];state.questions=questions;
+        if(!dataReady)return;
+        state.opened=opened.items||[];
         $('#loginPanel').classList.add('hidden');$('#dashboard').classList.remove('hidden');$('#password').value='';applyView();
       }catch(error){
         if(error.status===401){state.auth='';$('#dashboard').classList.add('hidden');$('#loginPanel').classList.remove('hidden');$('#loginError').textContent='密码错误，请重新输入';}
@@ -212,7 +229,7 @@
         $('#deleteError').textContent=messages[error.message]||error.message;
       }
     };
-    $('#query').onclick=applyView;$('#refresh').onclick=load;$('#status').onchange=applyView;$('#scope').onchange=applyView;$('#days').onchange=applyView;$('#search').onkeydown=event=>{if(event.key==='Enter')applyView()};
+    $('#query').onclick=applyFilters;$('#refresh').onclick=load;$('#status').onchange=applyFilters;$('#scope').onchange=applyFilters;$('#days').onchange=applyFilters;$('#search').onkeydown=event=>{if(event.key==='Enter')applyView()};
     $('#export').onclick=exportCsv;
     $('#logout').onclick=()=>{state.auth='';location.reload()};
   </script>

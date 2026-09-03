@@ -58,6 +58,45 @@ def test_list_submissions_filter_by_status(client, db_session, admin):
     assert items[0]["device"] == {"platform": "iPhone"}
 
 
+def test_list_submissions_returns_all_over_500_and_supports_pagination(client, db_session, admin):
+    s = Survey(slug="many-submissions", title="t", schema_json=[])
+    db_session.add(s)
+    db_session.commit()
+    submissions = [
+        Submission(
+            survey_id=s.id,
+            redeem_code=f"WJ-{index:06d}",
+            channel="tmall",
+            answers_json={},
+            status="new",
+            fingerprint=f"fp-{index:06d}",
+        )
+        for index in range(501)
+    ]
+    db_session.add_all(submissions)
+    db_session.commit()
+
+    response = client.get(f"/admin/submissions?survey_id={s.id}", auth=admin)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 501
+    assert payload["offset"] == 0
+    assert payload["limit"] is None
+    assert len(payload["items"]) == 501
+    assert payload["items"][0]["id"] == submissions[-1].id
+    assert payload["items"][-1]["id"] == submissions[0].id
+
+    page = client.get(
+        f"/admin/submissions?survey_id={s.id}&offset=100&limit=25",
+        auth=admin,
+    ).json()
+    assert page["total"] == 501
+    assert page["offset"] == 100
+    assert page["limit"] == 25
+    assert len(page["items"]) == 25
+    assert page["items"][0]["id"] == submissions[-101].id
+
+
 def test_list_submissions_includes_anonymous_participant_identity(client, db_session, admin):
     from datetime import timedelta
     from app.timeutil import now_cn
@@ -404,6 +443,85 @@ def test_survey_question_stats_aggregates_views_dwell_options(client, db_session
     assert opt2["X"]["count"] == 1 and opt2["Y"]["count"] == 1  # 多选各计一次
     # 顺序按 schema
     assert [q["q_id"] for q in d["questions"]] == ["q1", "q2"]
+
+
+def test_dashboard_filters_use_same_submission_cohort(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    s = Survey(slug="qs-filters", title="筛选问卷", schema_json=[
+        {"id": "q1", "type": "single", "title": "第一题", "options": ["A", "B", "C", "D", "T", "O"]},
+    ])
+    db_session.add(s)
+    db_session.commit()
+    now = now_cn().replace(microsecond=0)
+    submissions = [
+        Submission(survey_id=s.id, redeem_code="WJ-FLT001", channel="tmall",
+                   answers_json={"q1": "A"}, status="new", created_at=now),
+        Submission(survey_id=s.id, redeem_code="WJ-FLT002", channel="tmall",
+                   answers_json={"q1": "B"}, status="redeemed", created_at=now),
+        Submission(survey_id=s.id, redeem_code="WJ-FLT003", channel="tmall",
+                   answers_json={"q1": "C"}, status="flagged", created_at=now),
+        Submission(survey_id=s.id, redeem_code="WJ-FLT004", channel="tmall",
+                   answers_json={"q1": "D"}, status="rejected", created_at=now),
+        Submission(survey_id=s.id, redeem_code="WJ-FLT005", channel="test",
+                   answers_json={"q1": "T"}, status="new", created_at=now),
+        Submission(survey_id=s.id, redeem_code="WJ-FLT006", channel="tmall",
+                   answers_json={"q1": "O"}, status="new", created_at=now - timedelta(days=10)),
+    ]
+    db_session.add_all(submissions)
+    db_session.commit()
+
+    all_rows = client.get(f"/admin/submissions?survey_id={s.id}", auth=admin).json()
+    assert all_rows["total"] == 5
+    assert {item["status"] for item in all_rows["items"]} == {"new", "redeemed", "flagged"}
+    rejected = client.get(
+        f"/admin/submissions?survey_id={s.id}&status=rejected", auth=admin
+    ).json()
+    assert rejected["total"] == 1  # 旧版精确状态查询仍兼容
+
+    def stats(query=""):
+        data = client.get(
+            f"/admin/surveys/{s.id}/question-stats{query}", auth=admin
+        ).json()
+        return data, data["questions"][0]
+
+    def submission_total(query=""):
+        separator = "&" if query else ""
+        return client.get(
+            f"/admin/submissions?survey_id={s.id}{separator}{query}", auth=admin
+        ).json()["total"]
+
+    all_stats, all_q1 = stats()
+    assert all_stats["submissions"] == all_rows["total"] == 5
+    assert all_q1["answered"] == 5
+    assert {option["option"] for option in all_q1["options"]} == {"A", "B", "C", "T", "O"}
+
+    valid_stats, valid_q1 = stats("?status=valid")
+    assert valid_stats["submissions"] == submission_total("status=valid") == 4
+    assert valid_q1["answered"] == 4
+    assert {option["option"] for option in valid_q1["options"]} == {"A", "B", "T", "O"}
+
+    invalid_stats, invalid_q1 = stats("?status=invalid")
+    assert invalid_stats["submissions"] == submission_total("status=invalid") == 1
+    assert invalid_q1["answered"] == 1
+    assert invalid_q1["options"][0]["option"] == "C"
+
+    formal_stats, formal_q1 = stats("?scope=formal")
+    assert formal_stats["submissions"] == submission_total("scope=formal") == 4
+    assert formal_q1["answered"] == 4
+    test_stats, test_q1 = stats("?scope=test")
+    assert test_stats["submissions"] == submission_total("scope=test") == 1
+    assert test_q1["answered"] == 1
+    assert test_q1["options"][0]["option"] == "T"
+
+    recent_stats, recent_q1 = stats("?days=7")
+    assert recent_stats["submissions"] == submission_total("days=7") == 4
+    assert recent_q1["answered"] == 4
+    combined_stats, combined_q1 = stats("?status=valid&scope=formal&days=7")
+    assert combined_stats["submissions"] == submission_total("status=valid&scope=formal&days=7") == 2
+    assert combined_q1["answered"] == 2
+    assert {option["option"] for option in combined_q1["options"]} == {"A", "B"}
 
 
 def test_track_endpoint_stores_cn_event_type_and_dwell(client, db_session, survey_for_track=None):
