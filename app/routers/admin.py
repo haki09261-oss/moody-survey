@@ -5,7 +5,7 @@ from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import and_, case, false, func, or_
 from sqlalchemy.orm import Session
 
 from app.codes import build_display_code
@@ -22,16 +22,55 @@ router = APIRouter(prefix="/admin")
 
 _VISIBLE_SUBMISSION_STATUSES = ("new", "redeemed", "flagged")
 _VALID_SUBMISSION_STATUSES = ("new", "redeemed")
+_MAX_SUBMISSION_ID = (1 << 63) - 1
+_BASE_REDEEM_CODE_RE = re.compile(r"^(WJ-[0-9A-Z]{6})$")
+_DISPLAY_REDEEM_CODE_RE = re.compile(
+    r"^(WJ-[0-9A-Z]{6})(?P<package>02|10)-(?P<degree>0|[1-9][0-9]{0,3})$"
+)
+
+
+def _redeem_parts(value: str):
+    """Parse a complete base/display code into base, package and degree."""
+    normalized = value.strip().upper()
+    base_match = _BASE_REDEEM_CODE_RE.fullmatch(normalized)
+    if base_match:
+        return base_match.group(1), None, None
+    display_match = _DISPLAY_REDEEM_CODE_RE.fullmatch(normalized)
+    if not display_match:
+        return None
+    degree = int(display_match.group("degree"))
+    if degree > 1000 or degree % 25:
+        return None
+    return display_match.group(1), display_match.group("package"), degree
+
+
+def _filter_redeem_code(q, value: str):
+    """Filter by the whole supplied code, including package and degree suffix."""
+    parts = _redeem_parts(value)
+    if not parts:
+        return q.filter(false())
+    base_code, package, degree = parts
+    q = q.filter(Submission.redeem_code == base_code)
+    if package is None:
+        return q
+    tier = func.coalesce(Submission.tier_reached, 1)
+    package_condition = tier >= 2 if package == "10" else tier < 2
+    return q.filter(
+        package_condition,
+        func.coalesce(Submission.degree, 0) == degree,
+    )
 
 
 def _filter_submissions(q, status: Optional[str], scope: Optional[str], days: Optional[str]):
     """Apply the dashboard's shared answer-set filters to a Submission query.
 
-    Rejected answers are hidden from the default/all view because rejection is the
-    explicit operation that removes an answer from analysis. Exact persisted
-    statuses remain supported for callers of the older API.
+    Rejected answers are hidden when status is omitted because rejection is the
+    explicit operation that removes an answer from analysis. ``status=all`` and
+    exact persisted statuses remain available for operational record lookup.
     """
-    if status == "valid":
+    if status == "all":
+        pass
+    elif status == "valid":
         q = q.filter(Submission.status.in_(_VALID_SUBMISSION_STATUSES))
     elif status == "invalid":
         q = q.filter(Submission.status == "flagged")
@@ -74,11 +113,96 @@ def _submission_query(
         q = q.filter(Submission.channel == channel)
     q = _filter_submissions(q, status, scope, days)
     if code:
-        match = re.search(r"WJ-[0-9A-Z]{6}", code.upper())
-        q = q.filter(Submission.redeem_code == (match.group(0) if match else code.strip().upper()))
+        q = _filter_redeem_code(q, code)
     if min_score is not None:
         q = q.filter(Submission.risk_score >= min_score)
     return q
+
+
+def _apply_submission_search(q, db: Session, search: Optional[str], survey_id: Optional[int]):
+    """Apply exact, type-aware admin detail search without broad substring matches."""
+    term = (search or "").strip()
+    if not term:
+        return q
+
+    explicit_id_match = re.fullmatch(r"#(\d+)", term)
+    if explicit_id_match:
+        raw_id = explicit_id_match.group(1)
+        if len(raw_id) > 19 or int(raw_id) > _MAX_SUBMISSION_ID:
+            return q.filter(false())
+        return q.filter(Submission.id == int(raw_id))
+
+    # Keep the historical bare-number ID lookup, but also allow an all-numeric
+    # participant identifier to match exactly. Oversized values are treated only
+    # as participant identifiers so they can never overflow a database integer.
+    bare_id = None
+    if re.fullmatch(r"\d+", term) and len(term) <= 19:
+        candidate_id = int(term)
+        if candidate_id <= _MAX_SUBMISSION_ID:
+            bare_id = candidate_id
+
+    if _redeem_parts(term):
+        return _filter_redeem_code(q, term)
+
+    normalized = term.upper()
+    participant_match = or_(
+        func.upper(Distribution.bound_aid) == normalized,
+        func.upper(Distribution.user_code) == normalized,
+        func.upper(Distribution.bound_fingerprint) == normalized,
+    )
+    distribution_query = db.query(Distribution).filter(participant_match)
+    if survey_id is not None:
+        distribution_query = distribution_query.filter(Distribution.survey_id == survey_id)
+    matching_distributions = distribution_query.all()
+
+    matching_tokens = {item.token for item in matching_distributions if item.token}
+    fingerprint_keys = {
+        (item.survey_id, item.bound_fingerprint)
+        for item in matching_distributions
+        if item.bound_fingerprint
+    }
+    unique_fingerprint_keys = set()
+    if fingerprint_keys:
+        pair_filters = [
+            and_(
+                Distribution.survey_id == survey_id_value,
+                Distribution.bound_fingerprint == fingerprint,
+            )
+            for survey_id_value, fingerprint in fingerprint_keys
+        ]
+        unique_fingerprint_keys = {
+            (survey_id_value, fingerprint)
+            for survey_id_value, fingerprint, count in (
+                db.query(
+                    Distribution.survey_id,
+                    Distribution.bound_fingerprint,
+                    func.count(Distribution.id),
+                )
+                .filter(or_(*pair_filters))
+                .group_by(Distribution.survey_id, Distribution.bound_fingerprint)
+                .all()
+            )
+            if int(count or 0) == 1
+        }
+
+    conditions = [func.upper(Submission.fingerprint) == normalized]
+    if bare_id is not None:
+        conditions.append(Submission.id == bare_id)
+    if matching_tokens:
+        conditions.append(Submission.token.in_(matching_tokens))
+    if unique_fingerprint_keys:
+        missing_token = or_(Submission.token.is_(None), Submission.token == "")
+        conditions.append(and_(
+            missing_token,
+            or_(*[
+                and_(
+                    Submission.survey_id == survey_id_value,
+                    Submission.fingerprint == fingerprint,
+                )
+                for survey_id_value, fingerprint in unique_fingerprint_keys
+            ]),
+        ))
+    return q.filter(or_(*conditions))
 
 
 def _with_distribution_shares(items, label_key):
@@ -183,6 +307,7 @@ def list_submissions(
     scope: Optional[str] = None,
     days: Optional[str] = None,
     code: Optional[str] = None,
+    search: Optional[str] = None,
     min_score: Optional[int] = None,
     offset: int = Query(0, ge=0),
     limit: Optional[int] = Query(None, ge=1, le=5000),
@@ -192,8 +317,9 @@ def list_submissions(
     q = _submission_query(
         db, survey_id, channel, status, scope, days, code, min_score,
     )
+    q = _apply_submission_search(q, db, search, survey_id)
     total = q.count()
-    page = q.order_by(Submission.id.desc()).offset(offset)
+    page = q.order_by(Submission.created_at.desc(), Submission.id.desc()).offset(offset)
     if limit is not None:
         page = page.limit(limit)
     rows = page.all()
@@ -216,8 +342,9 @@ def list_submissions(
     for audit in audit_rows:
         redemption_audits.setdefault(audit.question_id, audit)
 
-    # 答卷本身不重复存参与标识；通过领取 token（优先）或同问卷设备指纹
-    # 关联 Distribution。bound_aid 是小程序本地匿名设备码，不是淘宝账号。
+    # 答卷本身不重复存参与标识；优先通过领取 token 关联 Distribution。
+    # 仅无 token 的历史答卷允许用同问卷唯一设备指纹兜底，歧义时保持未关联。
+    # bound_aid 是小程序本地匿名设备码，不是淘宝账号。
     # 分批关联，避免答卷增长后为每个指纹拼一个 OR，或撞数据库参数上限。
     def batches(values, size=500):
         values = tuple(values)
@@ -237,9 +364,10 @@ def list_submissions(
 
     fingerprints_by_survey = {}
     for row in rows:
-        if row.fingerprint and not distributions_by_token.get(row.token):
+        if not row.token and row.fingerprint:
             fingerprints_by_survey.setdefault(row.survey_id, set()).add(row.fingerprint)
     distributions_by_fingerprint = {}
+    ambiguous_fingerprints = set()
     for survey_id_value, fingerprints in fingerprints_by_survey.items():
         for fingerprint_batch in batches(fingerprints):
             for distribution in (
@@ -253,11 +381,16 @@ def list_submissions(
             ):
                 key = (distribution.survey_id, distribution.bound_fingerprint)
                 if distribution.bound_fingerprint:
-                    distributions_by_fingerprint.setdefault(key, distribution)
+                    if key in distributions_by_fingerprint:
+                        ambiguous_fingerprints.add(key)
+                    else:
+                        distributions_by_fingerprint[key] = distribution
+    for key in ambiguous_fingerprints:
+        distributions_by_fingerprint.pop(key, None)
 
     def participant_details(row: Submission):
         distribution = distributions_by_token.get(row.token)
-        if distribution is None and row.fingerprint:
+        if distribution is None and not row.token and row.fingerprint:
             distribution = distributions_by_fingerprint.get((row.survey_id, row.fingerprint))
         return {
             "participant_id": (
@@ -445,7 +578,11 @@ def submission_summary(
 def list_distributions(
     survey_id: Optional[int] = None,
     channel: Optional[str] = None,
+    scope: Optional[str] = None,
+    days: Optional[str] = None,
     only_unsubmitted: bool = True,
+    offset: int = Query(0, ge=0),
+    limit: Optional[int] = Query(1000, ge=1, le=5000),
     db: Session = Depends(get_db),
     user: AdminUser = Depends(require_admin),
 ):
@@ -456,24 +593,60 @@ def list_distributions(
         q = q.filter(Distribution.survey_id == survey_id)
     if channel:
         q = q.filter(Distribution.channel == channel)
-    dists = q.order_by(Distribution.id.desc()).limit(1000).all()
+    if scope == "formal":
+        q = q.filter(Distribution.channel != "test")
+    elif scope == "test":
+        q = q.filter(Distribution.channel == "test")
+    if days and days != "all":
+        try:
+            day_count = int(days)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="days must be 'all' or a positive integer")
+        if day_count <= 0:
+            raise HTTPException(status_code=422, detail="days must be 'all' or a positive integer")
+        q = q.filter(Distribution.created_at >= now_cn() - timedelta(days=day_count))
+
+    submitted_exists = db.query(Submission.id).filter(
+        Submission.survey_id == Distribution.survey_id,
+        Submission.status != "rejected",
+        or_(
+            and_(
+                Distribution.token != "",
+                Submission.token == Distribution.token,
+            ),
+            and_(
+                Distribution.bound_fingerprint.isnot(None),
+                Distribution.bound_fingerprint != "",
+                Submission.fingerprint == Distribution.bound_fingerprint,
+            ),
+        ),
+    ).exists()
+    if only_unsubmitted:
+        q = q.filter(~submitted_exists)
+    total = q.count()
+    page = q.order_by(Distribution.created_at.desc(), Distribution.id.desc()).offset(offset)
+    if limit is not None:
+        page = page.limit(limit)
+    dists = page.all()
 
     # 已提交集合(非 rejected):按 token 与指纹两个口径,与加载端对称
-    sub_q = db.query(Submission).filter(Submission.status != "rejected")
-    if survey_id is not None:
-        sub_q = sub_q.filter(Submission.survey_id == survey_id)
     submitted_tokens, submitted_fps = set(), set()
-    for s in sub_q.all():
-        if s.token:
-            submitted_tokens.add(s.token)
-        if s.fingerprint:
-            submitted_fps.add(s.fingerprint)
+    if not only_unsubmitted:
+        sub_q = db.query(Submission).filter(Submission.status != "rejected")
+        if survey_id is not None:
+            sub_q = sub_q.filter(Submission.survey_id == survey_id)
+        for s in sub_q.all():
+            if s.token:
+                submitted_tokens.add((s.survey_id, s.token))
+            if s.fingerprint:
+                submitted_fps.add((s.survey_id, s.fingerprint))
 
     now = now_cn()
     items = []
     for d in dists:
-        submitted = d.token in submitted_tokens or (
-            d.bound_fingerprint is not None and d.bound_fingerprint in submitted_fps
+        submitted = (d.survey_id, d.token) in submitted_tokens or (
+            d.bound_fingerprint is not None
+            and (d.survey_id, d.bound_fingerprint) in submitted_fps
         )
         if only_unsubmitted and submitted:
             continue
@@ -492,7 +665,7 @@ def list_distributions(
             "opened_at": d.created_at.isoformat() if d.created_at else None,
             "expires_at": d.expires_at.isoformat() if d.expires_at else None,
         })
-    return {"items": items}
+    return {"items": items, "total": total, "offset": offset, "limit": limit}
 
 
 @router.delete("/distributions/{dist_id}")

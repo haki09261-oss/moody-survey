@@ -97,6 +97,186 @@ def test_list_submissions_returns_all_over_500_and_supports_pagination(client, d
     assert page["items"][0]["id"] == submissions[-101].id
 
 
+def test_list_submissions_exact_search_and_strict_code_filter(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    survey = Survey(slug="exact-search", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.flush()
+    now = now_cn()
+    db_session.add(Distribution(
+        survey_id=survey.id,
+        channel="tmall",
+        token="token-search",
+        created_at=now,
+        expires_at=now + timedelta(hours=72),
+        bound_fingerprint="fp-search",
+        bound_aid="mp-user-abc",
+        user_code="USERA123",
+    ))
+    db_session.add(Distribution(
+        survey_id=survey.id,
+        channel="tmall",
+        token="token-numeric-participant",
+        created_at=now,
+        expires_at=now + timedelta(hours=72),
+        bound_aid="12345678901234567890",
+        user_code="NUMERIC1",
+    ))
+    target = Submission(
+        survey_id=survey.id,
+        redeem_code="WJ-SRCH01",
+        channel="tmall",
+        token="token-search",
+        fingerprint="fp-search",
+        answers_json={},
+        status="new",
+        tier_reached=1,
+        degree=475,
+    )
+    other = Submission(
+        survey_id=survey.id,
+        redeem_code="WJ-SRCH02",
+        channel="tmall",
+        fingerprint="fp-other",
+        answers_json={},
+        status="new",
+    )
+    numeric_participant = Submission(
+        survey_id=survey.id,
+        redeem_code="WJ-SRCH03",
+        channel="tmall",
+        token="token-numeric-participant",
+        answers_json={},
+        status="new",
+    )
+    db_session.add_all([target, other, numeric_participant])
+    db_session.commit()
+
+    def search(value):
+        return client.get(
+            "/admin/submissions",
+            params={"survey_id": survey.id, "search": value},
+            auth=admin,
+        ).json()
+
+    for value in (
+        str(target.id),
+        f"#{target.id}",
+        "wj-srch01",
+        "WJ-SRCH0102-475",
+        "MP-USER-ABC",
+        "usera123",
+        "FP-SEARCH",
+    ):
+        result = search(value)
+        assert result["total"] == 1, value
+        assert result["items"][0]["id"] == target.id, value
+
+    assert search("SRCH01")["total"] == 0
+    assert search("WJ-SRCH01XYZ")["total"] == 0
+    assert search("prefix-WJ-SRCH01-suffix")["total"] == 0
+    assert [item["id"] for item in search("12345678901234567890")["items"]] == [numeric_participant.id]
+    assert search("9" * 100)["total"] == 0
+    assert search("#" + "9" * 100)["total"] == 0
+    assert search("WJ-SRCH0110-500")["total"] == 0
+
+    for value in ("WJ-SRCH01", "WJ-SRCH0102-475"):
+        result = client.get(
+            "/admin/submissions",
+            params={"survey_id": survey.id, "code": value},
+            auth=admin,
+        ).json()
+        assert result["total"] == 1
+        assert result["items"][0]["id"] == target.id
+
+    for malformed in (
+        "WJ-SRCH01XYZ",
+        "prefix-WJ-SRCH01-suffix",
+        "WJ-SRCH0102-476",
+        "WJ-SRCH0110-1001",
+        "WJ-SRCH0110-500",
+    ):
+        result = client.get(
+            "/admin/submissions",
+            params={"survey_id": survey.id, "code": malformed},
+            auth=admin,
+        ).json()
+        summary = client.get(
+            "/admin/submissions/summary",
+            params={"survey_id": survey.id, "code": malformed},
+            auth=admin,
+        ).json()
+        assert result["total"] == summary["total"] == 0, malformed
+
+
+def test_list_submissions_status_all_includes_every_persisted_status(client, db_session, admin):
+    survey = Survey(slug="all-statuses", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.flush()
+    statuses = ("new", "redeemed", "flagged", "rejected", "in_progress")
+    db_session.add_all([
+        Submission(
+            survey_id=survey.id,
+            redeem_code=f"WJ-ALL{index:03d}",
+            channel="tmall",
+            answers_json={},
+            status=status,
+        )
+        for index, status in enumerate(statuses)
+    ])
+    db_session.commit()
+
+    default = client.get(
+        "/admin/submissions", params={"survey_id": survey.id}, auth=admin,
+    ).json()
+    all_rows = client.get(
+        "/admin/submissions",
+        params={"survey_id": survey.id, "status": "all"},
+        auth=admin,
+    ).json()
+    summary = client.get(
+        "/admin/submissions/summary",
+        params={"survey_id": survey.id, "status": "all"},
+        auth=admin,
+    ).json()
+
+    assert default["total"] == 3
+    assert {item["status"] for item in default["items"]} == {"new", "redeemed", "flagged"}
+    assert all_rows["total"] == summary["total"] == len(statuses)
+    assert {item["status"] for item in all_rows["items"]} == set(statuses)
+
+
+def test_list_submissions_orders_by_created_at_then_id(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    survey = Survey(slug="submission-order", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.flush()
+    now = now_cn().replace(microsecond=0)
+    newer_first = Submission(
+        survey_id=survey.id, redeem_code="WJ-ORD001", channel="tmall",
+        answers_json={}, status="new", created_at=now,
+    )
+    older_second = Submission(
+        survey_id=survey.id, redeem_code="WJ-ORD002", channel="tmall",
+        answers_json={}, status="new", created_at=now - timedelta(days=1),
+    )
+    newer_third = Submission(
+        survey_id=survey.id, redeem_code="WJ-ORD003", channel="tmall",
+        answers_json={}, status="new", created_at=now,
+    )
+    db_session.add_all([newer_first, older_second, newer_third])
+    db_session.commit()
+
+    items = client.get(
+        "/admin/submissions", params={"survey_id": survey.id}, auth=admin,
+    ).json()["items"]
+    assert [item["id"] for item in items] == [newer_third.id, newer_first.id, older_second.id]
+
+
 def test_submission_summary_uses_full_cohort_with_limited_detail_page(client, db_session, admin):
     from datetime import timedelta
     from app.timeutil import now_cn
@@ -247,6 +427,84 @@ def test_list_submissions_includes_anonymous_participant_identity(client, db_ses
     assert item["participant_id"] == "mp-anonymous-123"
     assert item["participant_code"] == "USER1234"
     assert item["identity_type"] == "anonymous_device"
+
+
+def test_participant_fingerprint_fallback_requires_one_distribution(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    survey = Survey(slug="identity-fallback", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.flush()
+    now = now_cn()
+    old = Distribution(
+        survey_id=survey.id, channel="tmall", token="token-old",
+        created_at=now, expires_at=now + timedelta(hours=72),
+        bound_fingerprint="shared-fp", bound_aid="aid-old", user_code="USEROLD1",
+    )
+    newer = Distribution(
+        survey_id=survey.id, channel="tmall", token="token-new",
+        created_at=now, expires_at=now + timedelta(hours=72),
+        bound_fingerprint="shared-fp", bound_aid="aid-new", user_code="USERNEW1",
+    )
+    unique = Distribution(
+        survey_id=survey.id, channel="tmall", token="token-unique",
+        created_at=now, expires_at=now + timedelta(hours=72),
+        bound_fingerprint="unique-fp", bound_aid="aid-unique", user_code="USERUNIQ",
+    )
+    db_session.add_all([old, newer, unique])
+    db_session.flush()
+    exact = Submission(
+        survey_id=survey.id, redeem_code="WJ-FBK001", channel="tmall",
+        token="token-old", fingerprint="shared-fp", answers_json={}, status="new",
+    )
+    ambiguous = Submission(
+        survey_id=survey.id, redeem_code="WJ-FBK002", channel="tmall",
+        token=None, fingerprint="shared-fp", answers_json={}, status="new",
+    )
+    dangling = Submission(
+        survey_id=survey.id, redeem_code="WJ-FBK003", channel="tmall",
+        token="missing-token", fingerprint="shared-fp", answers_json={}, status="new",
+    )
+    token_only = Submission(
+        survey_id=survey.id, redeem_code="WJ-FBK005", channel="tmall",
+        token="token-new", fingerprint=None, answers_json={}, status="new",
+    )
+    unique_legacy = Submission(
+        survey_id=survey.id, redeem_code="WJ-FBK004", channel="tmall",
+        token=None, fingerprint="unique-fp", answers_json={}, status="new",
+    )
+    db_session.add_all([exact, ambiguous, dangling, token_only, unique_legacy])
+    db_session.commit()
+
+    items = client.get(
+        "/admin/submissions", params={"survey_id": survey.id}, auth=admin,
+    ).json()["items"]
+    by_code = {item["redeem_code"]: item for item in items}
+    assert by_code["WJ-FBK001"]["participant_id"] == "aid-old"
+    assert by_code["WJ-FBK001"]["participant_code"] == "USEROLD1"
+    assert by_code["WJ-FBK002"]["participant_id"] == "shared-fp"
+    assert by_code["WJ-FBK002"]["participant_code"] is None
+    assert by_code["WJ-FBK003"]["participant_id"] == "shared-fp"
+    assert by_code["WJ-FBK003"]["participant_code"] is None
+    assert by_code["WJ-FBK005"]["participant_id"] == "aid-new"
+    assert by_code["WJ-FBK005"]["participant_code"] == "USERNEW1"
+    assert by_code["WJ-FBK004"]["participant_id"] == "aid-unique"
+    assert by_code["WJ-FBK004"]["participant_code"] == "USERUNIQ"
+
+    def matching_ids(search):
+        result = client.get(
+            "/admin/submissions",
+            params={"survey_id": survey.id, "search": search},
+            auth=admin,
+        ).json()
+        return {item["id"] for item in result["items"]}
+
+    assert matching_ids("aid-old") == {exact.id}
+    assert matching_ids("USEROLD1") == {exact.id}
+    assert matching_ids("aid-new") == {token_only.id}
+    assert matching_ids("aid-unique") == {unique_legacy.id}
+    assert matching_ids("shared-fp") == {exact.id, ambiguous.id, dangling.id, token_only.id}
 
 
 def test_reject_submission(client, db_session, admin):
@@ -734,24 +992,81 @@ def test_list_distributions_only_unsubmitted(client, db_session, admin):
         Distribution(survey_id=s.id, channel="tmall", token="tk_sub",
                      created_at=now, expires_at=now + timedelta(hours=72),
                      bound_fingerprint="fp_sub", user_code="U3"),
+        # 空指纹不是有效身份，不能仅因另一答卷也为空就判为已提交
+        Distribution(survey_id=s.id, channel="tmall", token="tk_blank_fp",
+                     created_at=now, expires_at=now + timedelta(hours=72),
+                     bound_fingerprint="", user_code="U4"),
     ])
-    db_session.add(Submission(survey_id=s.id, channel="tmall", token="tk_sub",
-                              fingerprint="fp_sub", redeem_code="WJ-CCCCCC",
-                              answers_json={}, status="new"))
+    db_session.add_all([
+        Submission(survey_id=s.id, channel="tmall", token="tk_sub",
+                   fingerprint="fp_sub", redeem_code="WJ-CCCCCC",
+                   answers_json={}, status="new"),
+        Submission(survey_id=s.id, channel="tmall", token="unrelated-token",
+                   fingerprint="", redeem_code="WJ-BLANK1",
+                   answers_json={}, status="new"),
+    ])
     db_session.commit()
 
     resp = client.get(f"/admin/distributions?survey_id={s.id}", auth=admin)
     assert resp.status_code == 200
     items = resp.json()["items"]
+    assert resp.json()["total"] == 3
     codes = {it["user_code"]: it for it in items}
-    assert set(codes) == {"U1", "U2"}            # 已提交 U3 被排除
+    assert set(codes) == {"U1", "U2", "U4"}      # 已提交 U3 被排除
     assert codes["U1"]["expired"] is False
     assert codes["U2"]["expired"] is True
 
     # only_unsubmitted=false 时全部返回，并标注 submitted
     allr = client.get(f"/admin/distributions?survey_id={s.id}&only_unsubmitted=false", auth=admin).json()["items"]
-    assert len(allr) == 3
-    assert {it["user_code"]: it["submitted"] for it in allr} == {"U1": False, "U2": False, "U3": True}
+    assert len(allr) == 4
+    assert {it["user_code"]: it["submitted"] for it in allr} == {
+        "U1": False, "U2": False, "U3": True, "U4": False,
+    }
+
+
+def test_list_distributions_total_and_filters_are_applied_before_pagination(client, db_session, admin):
+    from datetime import timedelta
+    from app.timeutil import now_cn
+
+    survey = Survey(slug="distribution-filters", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.flush()
+    now = now_cn().replace(microsecond=0)
+    db_session.add_all([
+        Distribution(
+            survey_id=survey.id, channel="tmall", token="open-formal-now",
+            created_at=now, expires_at=now + timedelta(hours=72),
+            bound_fingerprint="open-formal-now-fp",
+        ),
+        Distribution(
+            survey_id=survey.id, channel="tmall", token="open-formal-old",
+            created_at=now - timedelta(days=20), expires_at=now + timedelta(hours=72),
+            bound_fingerprint="open-formal-old-fp",
+        ),
+        Distribution(
+            survey_id=survey.id, channel="test", token="open-test-now",
+            created_at=now, expires_at=now + timedelta(hours=72),
+            bound_fingerprint="open-test-now-fp",
+        ),
+    ])
+    db_session.commit()
+
+    response = client.get(
+        "/admin/distributions",
+        params={
+            "survey_id": survey.id,
+            "scope": "formal",
+            "days": "7",
+            "only_unsubmitted": "true",
+            "limit": 1,
+        },
+        auth=admin,
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["limit"] == 1
+    assert [item["token"] for item in payload["items"]] == ["open-formal-now"]
 
 
 def test_delete_distribution(client, db_session, admin):

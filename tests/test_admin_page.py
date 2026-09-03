@@ -16,7 +16,7 @@ def test_admin_page_uses_dashboard_layout(client):
     assert "status',status" in response.text
     assert "scope',scope" in response.text
     assert "days',days" in response.text
-    assert "onchange=applyFilters" in response.text
+    assert "onchange=()=>applyFilters()" in response.text
     assert "refreshDashboardData" in response.text
     assert "dashboardRequestId" in response.text
     assert "filterOperationId" in response.text
@@ -24,8 +24,8 @@ def test_admin_page_uses_dashboard_layout(client):
     assert 'id="loginButton"' in response.text
     assert "正在登录并加载" in response.text
     assert "submissions/summary" in response.text
-    assert "if(!state.searchTerm)submissionParams.set('limit','100')" in response.text
-    assert "state.rows=[];state.summary=null;state.dashboardStatus='loading'" in response.text
+    assert "submissionQuery=dataQuery(true,true)" in response.text
+    assert "state.rows=[];state.total=0;state.summary=null;state.dashboardStatus='loading'" in response.text
     assert "state.dashboardStatus='error';state.dashboardError=error.message;state.questionsStatus='error'" in response.text
     assert "operationId!==loadOperationId" in response.text
     assert "if(event.key==='Enter')applyFilters()" in response.text
@@ -36,3 +36,31 @@ def test_admin_page_uses_dashboard_layout(client):
     assert "导出中" in response.text
     assert "refreshQuestionStats" in response.text
     assert "refreshOpened" in response.text
+
+
+def test_admin_page_uses_server_search_and_real_pagination(client):
+    response = client.get("/admin")
+    html = response.text
+
+    assert response.status_code == 200
+    assert 'placeholder="#提交ID、完整兑换码或完整参与标识"' in html
+    assert '<option value="">分析中的答卷</option>' in html
+    assert '<option value="all">全部记录</option>' in html
+    assert '<option value="rejected">已拒绝</option>' in html
+    assert '<option value="in_progress">未完成</option>' in html
+    assert 'id="pageInfo"' in html
+    assert 'id="prevPage"' in html
+    assert 'id="nextPage"' in html
+    assert "params.set('search',state.searchTerm)" in html
+    assert "params.set('limit',String(state.pageSize))" in html
+    assert "params.set('offset',String(state.offset))" in html
+    assert "state.searchTerm=$('#search').value.trim().toUpperCase();state.offset=0" in html
+    assert "$('#prevPage').onclick=()=>changePage(-1)" in html
+    assert "$('#nextPage').onclick=()=>changePage(1)" in html
+    assert "dataQuery(false,true)" in html
+    assert "new URLSearchParams({only_unsubmitted:'true',limit:'1'})" in html
+    assert "state.openedTotal=Number(opened.total??state.opened.length)" in html
+    assert "const visible=rows;" in html
+    assert "matchesSearch" not in html
+    assert "filteredRows" not in html
+    assert "slice(0,100)" not in html
