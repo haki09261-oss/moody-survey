@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.codes import build_display_code
 from app.database import get_db
 from app.devices import describe_device
+from app.ip_location import describe_ip
 from app.event_types import ANSWER, CLICK_TYPES, PAGE_LEAVE, PAGE_VIEW, QUESTION_DWELL_TYPES, QUESTION_VIEW
 from app.models import AdminUser, Distribution, Event, Submission, Survey
 from app.schemas import BatchDeleteRequest, PurgeSubmissionRequest, RedeemRequest, SurveyCreate
@@ -429,6 +430,7 @@ def list_submissions(
             "status": r.status,
             "tier_reached": r.tier_reached,
             "ip": r.ip, "fingerprint": r.fingerprint,
+            "ip_location": describe_ip(r.ip),
             "session_id": r.session_id,
             "ua": r.ua, "device": r.device_json,
             "device_label": describe_device(r.ua, r.device_json),

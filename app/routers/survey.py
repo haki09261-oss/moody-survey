@@ -121,6 +121,10 @@ def get_survey(
             .first()
         )
         if sub is not None:
+            if ended and sub.status == "in_progress":
+                base["token_status"] = "ended"
+                base["schema"] = []
+                return base
             if sub.status in ("flagged", "rejected"):
                 base["token_status"] = "invalid_submission"
                 base["already_submitted"] = True
@@ -129,13 +133,15 @@ def get_survey(
             base["token_status"] = "submitted_self"
             base["already_submitted"] = True
             base["submitted_tier"] = sub.tier_reached
-            base["can_resume_tier2"] = sub.tier_reached == 1 and (
+            base["can_resume_tier2"] = not ended and sub.tier_reached == 1 and (
                 (sub.answers_json or {}).get("q3") in (
                     "两种都戴，戴美瞳更多", "两种都戴，戴透明片更多",
                 )
             )
             base["display_code"] = build_display_code(sub.redeem_code, sub.tier_reached, sub.degree)
             base["submission_status"] = sub.status
+            if ended:
+                base["schema"] = []
             return base
         if ended:
             base["token_status"] = "ended"
@@ -229,6 +235,8 @@ def submit(
             raise HTTPException(status_code=409, detail="ineligible")
         if existing.status in ("flagged", "rejected"):
             raise HTTPException(status_code=422, detail="invalid_submission")
+        if ended and existing.status == "in_progress":
+            raise HTTPException(status_code=409, detail="ended")
         return SubmitResponse(
             redeem_code=existing.redeem_code,
             status=existing.status,

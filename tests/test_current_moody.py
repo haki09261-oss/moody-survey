@@ -88,7 +88,7 @@ def test_current_schema_contains_latest_requested_content():
 
 def test_moody_activity_window_matches_requested_beijing_time():
     assert STARTS_AT.isoformat(sep=" ") == "2026-08-28 10:00:00"
-    assert ENDS_AT.isoformat(sep=" ") == "2026-09-30 23:59:59"
+    assert ENDS_AT.isoformat(sep=" ") == "2026-09-05 14:00:00"
 
 
 def test_startup_upsert_refreshes_existing_moody_definition(db_session):

@@ -48,7 +48,8 @@
     <section class="card questions-card"><h2>每道题选项占比</h2><p class="section-note">分母为回答该题的人数；多选题各选项占比相加可能超过 100%。</p><div class="question-list" id="questions"></div></section>
     <div class="detail-head"><div><h2 class="detail-title">答卷明细与兑奖操作</h2><span class="muted">每页显示 100 条，搜索仅作用于下方明细。</span></div><nav class="pagination" aria-label="答卷分页"><span class="muted page-info" id="pageInfo">正在加载答卷…</span><button id="prevPage" type="button">上一页</button><button id="nextPage" type="button">下一页</button></nav></div>
     <section class="card table-card"><div class="scroll"><table>
-      <thead><tr><th>ID / 时间</th><th>答卷</th><th>匿名参与标识</th><th>奖品 / 度数</th><th>兑换码</th><th>兑奖状态</th><th>答题详情</th><th>操作</th></tr></thead>
+      <caption style="padding:14px 16px;text-align:left;background:#fffaf4;color:#806f65;font-size:13px;line-height:1.6">历史答卷未采集淘宝账号。IP 归属地为网络出口位置，仅供辅助核对；与收货地址不同不代表冒领，相同也不能证明是本人。网关、代理及移动网络可能影响定位。</caption>
+      <thead><tr><th>ID / 时间</th><th>答卷</th><th>匿名参与标识</th><th>提交 IP / 归属地</th><th>奖品 / 度数</th><th>兑换码</th><th>兑奖状态</th><th>答题详情</th><th>操作</th></tr></thead>
       <tbody id="rows"></tbody>
     </table><div class="empty hidden" id="empty">暂时没有符合条件的数据</div></div></section>
   </main>
@@ -175,6 +176,7 @@
           <td><b>#${row.id}</b><br><span class="muted">${time(row.created_at)}</span><br><span class="muted">${(Number(row.elapsed_ms||0)/1000).toFixed(1)} 秒</span></td>
           <td><span class="pill ${status}">${statusText[status]}</span>${row.is_test?'<span class="pill test-data">测试</span>':''}${reasons.length?`<br><span class="muted">${esc(reasons.join('、'))}</span>`:''}</td>
           <td class="identity"><b>${esc(row.participant_code||'—')}</b><br><span class="muted" title="${esc(row.participant_id||'')}">${esc(row.participant_id||'历史记录未关联')}</span><br><span class="muted">设备匿名码，并非淘宝昵称</span></td>
+          <td class="identity"><b>${esc(row.ip_location?.label||'归属地暂不可用')}</b><br><span class="code">${esc(row.ip||'未记录 IP')}</span>${row.ip_location?.isp?`<br><span class="muted">${esc(row.ip_location.isp)}</span>`:''}<br><span class="muted" title="${esc(row.ip_location?.source||'')}">${esc(row.ip_location?.note||'仅供辅助核对')}</span></td>
           <td><b>${esc(row.prize_name||'—')}</b><br><span class="muted">${esc(row.degree_label||'')}</span></td>
           <td class="code">${esc(row.display_code||row.redeem_code||'—')}</td>
           <td><span class="pill ${row.reward_status}">${statusText[row.reward_status]||row.reward_status}</span>${row.redeemed_at?`<br><span class="muted">${time(row.redeemed_at)}<br>${esc(row.redeemed_by||'')}</span>`:''}</td>
@@ -287,12 +289,12 @@
       const redeemed=selectedDeleteRow.status==='redeemed';$('#forceRedeemedRow').classList.toggle('hidden',!redeemed);$('#forceRedeemed').checked=false;
       $('#deleteModal').classList.remove('hidden');$('#deleteReason').focus();
     }
-    function csvCell(value){return `"${String(value??'').replace(/"/g,'""')}"`}
+    function csvCell(value){const text=String(value??'');return `"${(/^[\s]*[=+@-]/.test(text)?"'":"")+text.replace(/"/g,'""')}"`}
     async function exportCsv(){
       const button=$('#export'),label=button.textContent;button.disabled=true;button.textContent='导出中…';
       try{
-        const query=dataQuery(false,true),result=await api(`/admin/submissions${query?'?'+query:''}`),rows=result.items||[],header=['提交ID','数据范围','提交时间','答题时长(秒)','答卷状态','异常原因','匿名参与标识','参与核对码','奖品','度数','兑换码','兑奖状态'];
-        const lines=[header,...rows.map(row=>[row.id,row.is_test?'测试数据':'正式数据',time(row.created_at),(Number(row.elapsed_ms||0)/1000).toFixed(1),statusText[answerStatus(row)]||row.status,(row.risk_flags||[]).map(value=>reasonText[value]||value).join('|'),row.participant_id||'',row.participant_code||'',row.prize_name||'',row.degree_label||'',row.display_code||row.redeem_code||'',statusText[row.reward_status]||row.reward_status])].map(row=>row.map(csvCell).join(','));
+        const query=dataQuery(false,true),result=await api(`/admin/submissions${query?'?'+query:''}`),rows=result.items||[],header=['提交ID','数据范围','提交时间','答题时长(秒)','答卷状态','异常原因','匿名参与标识','参与核对码','提交IP','IP归属地（仅供辅助核对）','国家或地区','省份','城市','网络运营商','归属地核对说明','归属地数据来源','奖品','度数','兑换码','兑奖状态'];
+        const lines=[header,...rows.map(row=>[row.id,row.is_test?'测试数据':'正式数据',time(row.created_at),(Number(row.elapsed_ms||0)/1000).toFixed(1),statusText[answerStatus(row)]||row.status,(row.risk_flags||[]).map(value=>reasonText[value]||value).join('|'),row.participant_id||'',row.participant_code||'',row.ip||'',row.ip_location?.label||'归属地暂不可用',row.ip_location?.country||'',row.ip_location?.province||'',row.ip_location?.city||'',row.ip_location?.isp||'',row.ip_location?.note||'仅供辅助核对',row.ip_location?.source||'',row.prize_name||'',row.degree_label||'',row.display_code||row.redeem_code||'',statusText[row.reward_status]||row.reward_status])].map(row=>row.map(csvCell).join(','));
         const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),link=document.createElement('a');
         link.href=URL.createObjectURL(blob);link.download=`moody-survey-${new Date().toISOString().slice(0,10)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
       }catch(error){alert(`导出失败：${error.message}`)}

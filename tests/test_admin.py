@@ -38,6 +38,28 @@ def test_create_survey_requires_auth(client):
     assert resp.status_code == 401
 
 
+def test_submission_locations_follow_each_record_and_require_auth(client, db_session, admin):
+    survey = Survey(slug="ip-locations", title="t", schema_json=[])
+    db_session.add(survey)
+    db_session.flush()
+    for index, address in enumerate(["113.118.113.77", "127.0.0.1", None]):
+        db_session.add(Submission(
+            survey_id=survey.id, redeem_code=f"WJ-GEO00{index}", channel="tmall",
+            status="new", answers_json={}, ip=address,
+        ))
+    db_session.commit()
+    assert client.get("/admin/submissions").status_code == 401
+    response = client.get(f"/admin/submissions?survey_id={survey.id}", auth=admin)
+    assert response.status_code == 200
+    items = {row["redeem_code"]: row for row in response.json()["items"]}
+    assert items["WJ-GEO000"]["ip"] == "113.118.113.77"
+    assert items["WJ-GEO000"]["ip_location"]["city"] == "深圳市"
+    assert items["WJ-GEO001"]["ip_location"]["status"] == "non_public"
+    assert items["WJ-GEO002"]["ip_location"]["status"] == "missing"
+    assert all(row["identity_type"] == "anonymous_device" for row in items.values())
+    assert db_session.query(Submission).count() == 3
+
+
 def test_list_submissions_filter_by_status(client, db_session, admin):
     s = Survey(slug="s1", title="t", schema_json=[])
     db_session.add(s)
